@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:openusd.org)",
+      "WebFetch(domain:openusd.org)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(dotnet sln add:*)"
+    ],
+    "deny": []
+  }
+}
