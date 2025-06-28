@@ -28,25 +28,77 @@ public sealed class VtValue
         if (_value is T directCast)
             return directCast;
         
-        if (_value == null && !typeof(T).IsValueType)
-            return default!;
+        var targetType = typeof(T);
+        var underlyingType = Nullable.GetUnderlyingType(targetType);
+        
+        // Handle null values
+        if (_value == null)
+        {
+            if (underlyingType != null || !targetType.IsValueType)
+                return default!;
             
-        if (_value == null && typeof(T).IsValueType)
-            throw new InvalidOperationException($"Cannot convert null to value type {typeof(T).Name}");
+            throw new InvalidOperationException($"Cannot convert null to value type {targetType.Name}");
+        }
 
         try
         {
-            return (T)Convert.ChangeType(_value, typeof(T));
+            // Handle nullable types
+            if (underlyingType != null)
+            {
+                var convertedValue = Convert.ChangeType(_value, underlyingType);
+                return (T)Activator.CreateInstance(targetType, convertedValue)!;
+            }
+            
+            // Handle regular conversions
+            return (T)Convert.ChangeType(_value, targetType);
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Cannot convert {_type.Name} to {typeof(T).Name}", ex);
+            throw new InvalidOperationException($"Cannot convert {_type.Name} to {targetType.Name}", ex);
         }
     }
 
-    public bool IsHolding<T>() => _type == typeof(T) || (_value != null && _value is T);
+    public bool IsHolding<T>() 
+    {
+        var targetType = typeof(T);
+        
+        // Direct type match
+        if (_type == targetType)
+            return true;
+            
+        // Direct value type check
+        if (_value != null && _value is T)
+            return true;
+            
+        // Handle nullable types
+        var underlyingType = Nullable.GetUnderlyingType(targetType);
+        if (underlyingType != null)
+        {
+            return _value == null || _type == underlyingType || underlyingType.IsAssignableFrom(_type);
+        }
+        
+        return false;
+    }
 
-    public bool IsHolding(Type type) => _type == type || (_value != null && type.IsAssignableFrom(_value.GetType()));
+    public bool IsHolding(Type type) 
+    {
+        // Direct type match
+        if (_type == type)
+            return true;
+            
+        // Assignability check
+        if (_value != null && type.IsAssignableFrom(_value.GetType()))
+            return true;
+            
+        // Handle nullable types
+        var underlyingType = Nullable.GetUnderlyingType(type);
+        if (underlyingType != null)
+        {
+            return _value == null || _type == underlyingType || underlyingType.IsAssignableFrom(_type);
+        }
+        
+        return false;
+    }
 
     public Type GetHeldType() => _type;
 

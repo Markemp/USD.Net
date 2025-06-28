@@ -5,7 +5,8 @@
       "WebFetch(domain:openusd.org)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(dotnet sln add:*)"
+      "Bash(dotnet sln add:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

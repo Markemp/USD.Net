@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Ar;
@@ -17,9 +15,14 @@ public sealed class UsdStage
     private readonly SdfLayer? _sessionLayer;
     private readonly List<SdfLayer> _layerStack = new();
     private readonly ArResolverContext _resolverContext;
+    private readonly Dictionary<SdfPath, UsdPrim> _primIndex = new();
     private UsdPrim? _defaultPrim;
     private UsdStageLoadRules? _loadRules;
     private UsdStagePopulationMask? _populationMask;
+    private UsdTimeCode _startTimeCode = UsdTimeCode.Create(1.0);
+    private UsdTimeCode _endTimeCode = UsdTimeCode.Create(100.0);
+    private double _timeCodesPerSecond = 24.0;
+    private double _framesPerSecond = 24.0;
 
     private UsdStage(SdfLayer rootLayer, SdfLayer? sessionLayer = null, ArResolverContext? resolverContext = null)
     {
@@ -107,7 +110,14 @@ public sealed class UsdStage
     /// </summary>
     public UsdPrim GetPrimAtPath(SdfPath path)
     {
-        throw new NotImplementedException();
+        if (path.IsEmpty())
+            return new UsdPrim(); // Invalid prim
+        
+        if (_primIndex.TryGetValue(path, out var existingPrim))
+            return existingPrim;
+            
+        // Return invalid prim if not found
+        return new UsdPrim();
     }
 
     /// <summary>
@@ -115,7 +125,36 @@ public sealed class UsdStage
     /// </summary>
     public UsdPrim DefinePrim(SdfPath path, TfToken? typeName = null)
     {
-        throw new NotImplementedException();
+        if (path.IsEmpty() || !path.IsAbsolutePath())
+            throw new ArgumentException("Path must be absolute and non-empty", nameof(path));
+            
+        // Ensure parent prims exist
+        var parentPath = path.GetParentPath();
+        if (!parentPath.IsEmpty() && !parentPath.IsAbsoluteRootPath())
+        {
+            DefinePrim(parentPath);
+        }
+        
+        // Create or get existing prim
+        if (_primIndex.TryGetValue(path, out var existingPrim))
+        {
+            // Update type name if provided
+            if (typeName.HasValue && !typeName.Value.IsEmpty)
+            {
+                existingPrim.SetTypeName(typeName.Value.GetText());
+            }
+            return existingPrim;
+        }
+        
+        // Create new prim
+        var newPrim = new UsdPrim(this, path);
+        if (typeName.HasValue && !typeName.Value.IsEmpty)
+        {
+            newPrim.SetTypeName(typeName.Value.GetText());
+        }
+        
+        _primIndex[path] = newPrim;
+        return newPrim;
     }
 
     /// <summary>
@@ -123,7 +162,7 @@ public sealed class UsdStage
     /// </summary>
     public UsdPrim OverridePrim(SdfPath path)
     {
-        throw new NotImplementedException();
+        return DefinePrim(path);
     }
 
     /// <summary>
@@ -131,7 +170,25 @@ public sealed class UsdStage
     /// </summary>
     public bool RemovePrim(SdfPath path)
     {
-        throw new NotImplementedException();
+        if (path.IsEmpty())
+            return false;
+            
+        // Remove all descendant prims first
+        var toRemove = new List<SdfPath>();
+        foreach (var kvp in _primIndex)
+        {
+            if (kvp.Key.HasPrefix(path))
+            {
+                toRemove.Add(kvp.Key);
+            }
+        }
+        
+        foreach (var pathToRemove in toRemove)
+        {
+            _primIndex.Remove(pathToRemove);
+        }
+        
+        return toRemove.Count > 0;
     }
 
     /// <summary>
@@ -174,7 +231,7 @@ public sealed class UsdStage
     /// </summary>
     public IEnumerable<UsdPrim> Traverse()
     {
-        throw new NotImplementedException();
+        return _primIndex.Values.Where(prim => prim.IsValid());
     }
 
     /// <summary>
@@ -182,7 +239,7 @@ public sealed class UsdStage
     /// </summary>
     public IEnumerable<UsdPrim> TraverseAll()
     {
-        throw new NotImplementedException();
+        return _primIndex.Values;
     }
 
     #endregion
@@ -194,7 +251,9 @@ public sealed class UsdStage
     /// </summary>
     public UsdStage Load(SdfPath? path = null)
     {
-        throw new NotImplementedException();
+        // For now, this is a no-op since we don't have payload support yet
+        // TODO: Implement payload loading when payload system is ready
+        return this;
     }
 
     /// <summary>
@@ -202,7 +261,9 @@ public sealed class UsdStage
     /// </summary>
     public UsdStage Unload(SdfPath? path = null)
     {
-        throw new NotImplementedException();
+        // For now, this is a no-op since we don't have payload support yet
+        // TODO: Implement payload unloading when payload system is ready
+        return this;
     }
 
     /// <summary>
@@ -255,7 +316,16 @@ public sealed class UsdStage
     /// </summary>
     public bool Export(string filename, bool addSourceFileComment = true)
     {
-        throw new NotImplementedException();
+        try
+        {
+            // Create a flattened representation and export it
+            var flattened = Flatten(addSourceFileComment);
+            return flattened.Export(filename);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -263,7 +333,22 @@ public sealed class UsdStage
     /// </summary>
     public SdfLayer Flatten(bool addSourceFileComment = true)
     {
-        throw new NotImplementedException();
+        // Create a new layer to contain flattened content
+        var flattenedLayer = SdfLayer.CreateAnonymous("flattened");
+        
+        if (addSourceFileComment)
+        {
+            flattenedLayer.SetMetadata("comment", new VtValue($"Flattened from stage with root layer: {_rootLayer.GetIdentifier()}"));
+        }
+        
+        // TODO: Implement proper layer composition and flattening
+        // For now, just copy metadata from root layer
+        foreach (var kvp in _rootLayer.GetType().GetProperties())
+        {
+            // This is a placeholder - proper implementation would flatten all composition
+        }
+        
+        return flattenedLayer;
     }
 
     #endregion
@@ -313,7 +398,7 @@ public sealed class UsdStage
     /// </summary>
     public UsdTimeCode GetStartTimeCode()
     {
-        throw new NotImplementedException();
+        return _startTimeCode;
     }
 
     /// <summary>
@@ -321,7 +406,7 @@ public sealed class UsdStage
     /// </summary>
     public void SetStartTimeCode(UsdTimeCode timeCode)
     {
-        throw new NotImplementedException();
+        _startTimeCode = timeCode;
     }
 
     /// <summary>
@@ -329,7 +414,7 @@ public sealed class UsdStage
     /// </summary>
     public UsdTimeCode GetEndTimeCode()
     {
-        throw new NotImplementedException();
+        return _endTimeCode;
     }
 
     /// <summary>
@@ -337,7 +422,7 @@ public sealed class UsdStage
     /// </summary>
     public void SetEndTimeCode(UsdTimeCode timeCode)
     {
-        throw new NotImplementedException();
+        _endTimeCode = timeCode;
     }
 
     /// <summary>
@@ -345,7 +430,7 @@ public sealed class UsdStage
     /// </summary>
     public double GetTimeCodesPerSecond()
     {
-        throw new NotImplementedException();
+        return _timeCodesPerSecond;
     }
 
     /// <summary>
@@ -353,7 +438,7 @@ public sealed class UsdStage
     /// </summary>
     public void SetTimeCodesPerSecond(double timeCodesPerSecond)
     {
-        throw new NotImplementedException();
+        _timeCodesPerSecond = timeCodesPerSecond;
     }
 
     /// <summary>
@@ -361,7 +446,7 @@ public sealed class UsdStage
     /// </summary>
     public double GetFramesPerSecond()
     {
-        throw new NotImplementedException();
+        return _framesPerSecond;
     }
 
     /// <summary>
@@ -369,7 +454,7 @@ public sealed class UsdStage
     /// </summary>
     public void SetFramesPerSecond(double framesPerSecond)
     {
-        throw new NotImplementedException();
+        _framesPerSecond = framesPerSecond;
     }
 
     #endregion

@@ -9,6 +9,11 @@ namespace Pxr.Usd;
 /// </summary>
 public class UsdPrim : UsdObject
 {
+    private string _typeName = string.Empty;
+    private readonly Dictionary<string, object> _metadata = new();
+    private readonly Dictionary<string, UsdAttribute> _attributes = new();
+    private readonly Dictionary<string, UsdRelationship> _relationships = new();
+
     #region Iterator Types
     
     public class SiblingIterator
@@ -35,7 +40,17 @@ public class UsdPrim : UsdObject
 
     #region Construction
     
-    public UsdPrim()
+    /// <summary>
+    /// Create an invalid prim.
+    /// </summary>
+    public UsdPrim() : base()
+    {
+    }
+    
+    /// <summary>
+    /// Create a prim with stage and path.
+    /// </summary>
+    public UsdPrim(UsdStage stage, SdfPath path) : base(stage, path)
     {
     }
     
@@ -48,7 +63,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public string GetTypeName()
     {
-        throw new NotImplementedException();
+        return _typeName;
     }
     
     /// <summary>
@@ -56,7 +71,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool SetTypeName(string typeName)
     {
-        throw new NotImplementedException();
+        _typeName = typeName ?? string.Empty;
+        return true;
     }
     
     /// <summary>
@@ -64,7 +80,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ClearTypeName()
     {
-        throw new NotImplementedException();
+        _typeName = string.Empty;
+        return true;
     }
     
     /// <summary>
@@ -72,7 +89,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasTypeName()
     {
-        throw new NotImplementedException();
+        return !string.IsNullOrEmpty(_typeName);
     }
     
     /// <summary>
@@ -200,7 +217,19 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdAttribute CreateAttribute(string name, string typeName, bool custom = false)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(name))
+            throw new ArgumentException("Attribute name cannot be null or empty", nameof(name));
+
+        var stage = GetStage();
+        if (stage == null)
+            return new UsdAttribute(); // Invalid attribute
+
+        var attributePath = GetPath().AppendProperty(name);
+        var attribute = new UsdAttribute(stage, attributePath, typeName);
+        attribute.SetCustom(custom);
+        
+        _attributes[name] = attribute;
+        return attribute;
     }
     
     /// <summary>
@@ -208,7 +237,10 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdAttribute GetAttribute(string name)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(name))
+            return new UsdAttribute();
+
+        return _attributes.TryGetValue(name, out var attribute) ? attribute : new UsdAttribute();
     }
     
     /// <summary>
@@ -216,7 +248,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasAttribute(string name)
     {
-        throw new NotImplementedException();
+        return !string.IsNullOrEmpty(name) && _attributes.ContainsKey(name);
     }
     
     /// <summary>
@@ -224,7 +256,18 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdAttribute GetAttributeAtPath(string path)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(path))
+            return new UsdAttribute();
+
+        // Extract attribute name from path
+        var sdfPath = new SdfPath(path);
+        if (!sdfPath.IsPropertyPath())
+            return new UsdAttribute();
+
+        var attributeName = sdfPath.GetName();
+        var attribute = GetAttribute(attributeName);
+        
+        return attribute.IsValid() ? attribute : new UsdAttribute();
     }
     
     /// <summary>
@@ -232,7 +275,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public IEnumerable<UsdAttribute> GetAttributes()
     {
-        throw new NotImplementedException();
+        return _attributes.Values.Where(attr => attr.IsValid());
     }
     
     /// <summary>
