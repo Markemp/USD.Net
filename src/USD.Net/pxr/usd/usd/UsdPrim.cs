@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Pxr.Base.Tf;
+using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -14,27 +16,62 @@ public class UsdPrim : UsdObject
     private readonly Dictionary<string, object> _metadata = new();
     private readonly Dictionary<string, UsdAttribute> _attributes = new();
     private readonly Dictionary<string, UsdRelationship> _relationships = new();
+    private bool? _cachedActiveFlag = null;
 
     #region Iterator Types
     
     public class SiblingIterator
     {
-        // TODO: Implement iterator for sibling traversal
+        private readonly IEnumerator<UsdPrim> _enumerator;
+        
+        internal SiblingIterator(IEnumerable<UsdPrim> siblings)
+        {
+            _enumerator = siblings.GetEnumerator();
+        }
+        
+        public bool MoveNext() => _enumerator.MoveNext();
+        public UsdPrim Current => _enumerator.Current;
+        public void Dispose() => _enumerator.Dispose();
     }
     
-    public class SiblingRange
+    public class SiblingRange : IEnumerable<UsdPrim>
     {
-        // TODO: Implement range for sibling traversal
+        private readonly IEnumerable<UsdPrim> _siblings;
+        
+        internal SiblingRange(IEnumerable<UsdPrim> siblings)
+        {
+            _siblings = siblings;
+        }
+        
+        public IEnumerator<UsdPrim> GetEnumerator() => _siblings.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
     
     public class SubtreeIterator
     {
-        // TODO: Implement iterator for subtree traversal
+        private readonly IEnumerator<UsdPrim> _enumerator;
+        
+        internal SubtreeIterator(IEnumerable<UsdPrim> descendants)
+        {
+            _enumerator = descendants.GetEnumerator();
+        }
+        
+        public bool MoveNext() => _enumerator.MoveNext();
+        public UsdPrim Current => _enumerator.Current;
+        public void Dispose() => _enumerator.Dispose();
     }
     
-    public class SubtreeRange
+    public class SubtreeRange : IEnumerable<UsdPrim>
     {
-        // TODO: Implement range for subtree traversal
+        private readonly IEnumerable<UsdPrim> _descendants;
+        
+        internal SubtreeRange(IEnumerable<UsdPrim> descendants)
+        {
+            _descendants = descendants;
+        }
+        
+        public IEnumerator<UsdPrim> GetEnumerator() => _descendants.GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
     
     #endregion
@@ -98,7 +135,23 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsActive()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        // Check cached value first
+        if (_cachedActiveFlag.HasValue)
+            return _cachedActiveFlag.Value;
+            
+        // Check if there's authored active metadata
+        if (_metadata.TryGetValue("active", out var activeValue))
+        {
+            _cachedActiveFlag = activeValue is bool boolVal ? boolVal : true;
+            return _cachedActiveFlag.Value;
+        }
+        
+        // Default is active unless explicitly set to false
+        _cachedActiveFlag = true;
+        return true;
     }
     
     /// <summary>
@@ -106,7 +159,12 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool SetActive(bool active)
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        _metadata["active"] = active;
+        _cachedActiveFlag = active;
+        return true;
     }
     
     /// <summary>
@@ -114,7 +172,12 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ClearActive()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        _metadata.Remove("active");
+        _cachedActiveFlag = null;
+        return true;
     }
     
     /// <summary>
@@ -122,7 +185,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasAuthoredActive()
     {
-        throw new NotImplementedException();
+        return _metadata.ContainsKey("active");
     }
     
     /// <summary>
@@ -130,7 +193,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsModel()
     {
-        throw new NotImplementedException();
+        var kind = GetKind();
+        return IsKindModel(kind);
     }
     
     /// <summary>
@@ -138,7 +202,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsGroup()
     {
-        throw new NotImplementedException();
+        var kind = GetKind();
+        return IsKindGroup(kind);
     }
     
     /// <summary>
@@ -146,7 +211,44 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsComponent()
     {
-        throw new NotImplementedException();
+        var kind = GetKind();
+        return IsKindComponent(kind);
+    }
+    
+    #endregion
+
+    #region Kind System Helpers
+    
+    /// <summary>
+    /// Get the kind metadata for this prim.
+    /// </summary>
+    private string GetKind()
+    {
+        return _metadata.TryGetValue("kind", out var kind) ? kind.ToString() ?? string.Empty : string.Empty;
+    }
+    
+    /// <summary>
+    /// Check if a kind is a model kind.
+    /// </summary>
+    private static bool IsKindModel(string kind)
+    {
+        return kind == "model" || IsKindComponent(kind) || IsKindGroup(kind);
+    }
+    
+    /// <summary>
+    /// Check if a kind is a group kind.
+    /// </summary>
+    private static bool IsKindGroup(string kind)
+    {
+        return kind == "group" || kind == "assembly";
+    }
+    
+    /// <summary>
+    /// Check if a kind is a component kind.
+    /// </summary>
+    private static bool IsKindComponent(string kind)
+    {
+        return kind == "component";
     }
     
     #endregion
@@ -158,7 +260,15 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdPrim GetParent()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return new UsdPrim();
+            
+        var parentPath = GetPath().GetParentPath();
+        if (parentPath.IsEmpty())
+            return new UsdPrim(); // Root prim has no parent
+            
+        var stage = GetStage();
+        return stage?.GetPrimAtPath(parentPath) ?? new UsdPrim();
     }
     
     /// <summary>
@@ -166,7 +276,20 @@ public class UsdPrim : UsdObject
     /// </summary>
     public SiblingRange GetChildren()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return new SiblingRange(Enumerable.Empty<UsdPrim>());
+            
+        var stage = GetStage();
+        if (stage == null)
+            return new SiblingRange(Enumerable.Empty<UsdPrim>());
+            
+        // Get all prims from stage and filter for direct children
+        var children = stage.TraverseAll()
+            .Where(prim => prim.IsValid() && 
+                          prim.GetPath().GetParentPath().Equals(GetPath()))
+            .Where(prim => prim.GetPath() != GetPath()); // Exclude self
+            
+        return new SiblingRange(children);
     }
     
     /// <summary>
@@ -174,7 +297,11 @@ public class UsdPrim : UsdObject
     /// </summary>
     public SiblingRange GetFilteredChildren(Func<UsdPrim, bool> predicate)
     {
-        throw new NotImplementedException();
+        if (predicate == null)
+            return GetChildren();
+            
+        var children = GetChildren().Where(predicate);
+        return new SiblingRange(children);
     }
     
     /// <summary>
@@ -182,7 +309,20 @@ public class UsdPrim : UsdObject
     /// </summary>
     public SubtreeRange GetDescendants()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return new SubtreeRange(Enumerable.Empty<UsdPrim>());
+            
+        var stage = GetStage();
+        if (stage == null)
+            return new SubtreeRange(Enumerable.Empty<UsdPrim>());
+            
+        // Get all prims that have this prim's path as a prefix
+        var descendants = stage.TraverseAll()
+            .Where(prim => prim.IsValid() && 
+                          prim.GetPath().HasPrefix(GetPath()) &&
+                          prim.GetPath() != GetPath()); // Exclude self
+            
+        return new SubtreeRange(descendants);
     }
     
     /// <summary>
@@ -190,7 +330,15 @@ public class UsdPrim : UsdObject
     /// </summary>
     public SiblingRange GetSiblings()
     {
-        throw new NotImplementedException();
+        var parent = GetParent();
+        if (!parent.IsValid())
+            return new SiblingRange(Enumerable.Empty<UsdPrim>());
+            
+        // Get all children of parent, excluding self
+        var siblings = parent.GetChildren()
+            .Where(prim => prim.GetPath() != GetPath());
+            
+        return new SiblingRange(siblings);
     }
     
     /// <summary>
@@ -198,7 +346,23 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdPrim GetNextSibling()
     {
-        throw new NotImplementedException();
+        var parent = GetParent();
+        if (!parent.IsValid())
+            return new UsdPrim();
+            
+        // Get all children of parent (including self)
+        var allChildren = parent.GetChildren().ToList();
+        if (allChildren.Count == 0)
+            return new UsdPrim();
+            
+        // Find this prim in children list and return next one
+        for (int i = 0; i < allChildren.Count - 1; i++)
+        {
+            if (allChildren[i].GetPath().Equals(GetPath()))
+                return allChildren[i + 1];
+        }
+        
+        return new UsdPrim(); // No next sibling or not found
     }
     
     /// <summary>
@@ -206,7 +370,12 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdPrim GetChild(string name)
     {
-        throw new NotImplementedException();
+        if (!IsValid() || string.IsNullOrEmpty(name))
+            return new UsdPrim();
+            
+        var childPath = GetPath().AppendChild(name);
+        var stage = GetStage();
+        return stage?.GetPrimAtPath(childPath) ?? new UsdPrim();
     }
     
     #endregion
@@ -335,7 +504,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsA<T>() where T : UsdSchemaBase
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdSchemaBase is available
+        return false;
     }
     
     /// <summary>
@@ -343,7 +513,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsA(Type schemaType)
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdSchemaBase is available
+        return false;
     }
     
     /// <summary>
@@ -351,7 +522,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasAPI<T>() where T : UsdAPISchemaBase
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdAPISchemaBase is available
+        return false;
     }
     
     /// <summary>
@@ -359,7 +531,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ApplyAPI<T>() where T : UsdAPISchemaBase
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdAPISchemaBase is available
+        return false;
     }
     
     /// <summary>
@@ -367,7 +540,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool RemoveAPI<T>() where T : UsdAPISchemaBase
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdAPISchemaBase is available
+        return false;
     }
     
     #endregion
@@ -379,7 +553,11 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsInstanceable()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        return _metadata.TryGetValue("instanceable", out var value) && 
+               value is bool boolVal && boolVal;
     }
     
     /// <summary>
@@ -387,7 +565,11 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool SetInstanceable(bool instanceable)
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        _metadata["instanceable"] = instanceable;
+        return true;
     }
     
     /// <summary>
@@ -395,7 +577,10 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ClearInstanceable()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        return _metadata.Remove("instanceable");
     }
     
     /// <summary>
@@ -403,7 +588,13 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsInstance()
     {
-        throw new NotImplementedException();
+        if (!IsValid())
+            return false;
+            
+        // For now, simplified implementation
+        // TODO: Implement proper instance detection with stage support
+        return _metadata.TryGetValue("instance", out var value) && 
+               value is bool boolVal && boolVal;
     }
     
     /// <summary>
@@ -411,7 +602,12 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdPrim GetPrototype()
     {
-        throw new NotImplementedException();
+        if (!IsInstance())
+            return new UsdPrim();
+            
+        // TODO: Implement proper prototype lookup with stage support
+        // For now, return invalid prim as placeholder
+        return new UsdPrim();
     }
     
     #endregion
@@ -423,7 +619,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdReferences GetReferences()
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdReferences is available
+        return new UsdReferences();
     }
     
     /// <summary>
@@ -431,7 +628,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdInherits GetInherits()
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdInherits is available
+        return new UsdInherits();
     }
     
     /// <summary>
@@ -439,7 +637,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdSpecializes GetSpecializes()
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdSpecializes is available
+        return new UsdSpecializes();
     }
     
     /// <summary>
@@ -447,7 +646,8 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdVariantSets GetVariantSets()
     {
-        throw new NotImplementedException();
+        // TODO: Implement when UsdVariantSets is available
+        return new UsdVariantSets();
     }
     
     #endregion
@@ -459,7 +659,16 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool SetMetadata<T>(string key, T value)
     {
-        throw new NotImplementedException();
+        if (!IsValid() || string.IsNullOrEmpty(key))
+            return false;
+            
+        _metadata[key] = value!;
+        
+        // Clear cached flags that might be affected
+        if (key == "active")
+            _cachedActiveFlag = null;
+            
+        return true;
     }
     
     /// <summary>
@@ -467,7 +676,33 @@ public class UsdPrim : UsdObject
     /// </summary>
     public T GetMetadata<T>(string key)
     {
-        throw new NotImplementedException();
+        if (!IsValid() || string.IsNullOrEmpty(key))
+        {
+            // Special case for string to return empty string instead of null
+            if (typeof(T) == typeof(string))
+                return (T)(object)string.Empty;
+            return default(T)!;
+        }
+            
+        if (_metadata.TryGetValue(key, out var value))
+        {
+            try
+            {
+                if (value is T typedValue)
+                    return typedValue;
+                if (value != null)
+                    return (T)Convert.ChangeType(value, typeof(T));
+            }
+            catch
+            {
+                // Conversion failed, return default
+            }
+        }
+        
+        // Special case for string to return empty string instead of null
+        if (typeof(T) == typeof(string))
+            return (T)(object)string.Empty;
+        return default(T)!;
     }
     
     /// <summary>
@@ -475,7 +710,10 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasMetadata(string key)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(key))
+            return false;
+            
+        return _metadata.ContainsKey(key);
     }
     
     /// <summary>
@@ -483,7 +721,16 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ClearMetadata(string key)
     {
-        throw new NotImplementedException();
+        if (!IsValid() || string.IsNullOrEmpty(key))
+            return false;
+            
+        var removed = _metadata.Remove(key);
+        
+        // Clear cached flags that might be affected
+        if (key == "active")
+            _cachedActiveFlag = null;
+            
+        return removed;
     }
     
     #endregion
