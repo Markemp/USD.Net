@@ -41,11 +41,12 @@ Implementation order based on dependencies:
 4. **UsdStage.DefinePrim()**: Added string overload for test compatibility
 
 #### Current Status
-- **Completed Classes**: TfToken, VtValue, SdfPath, SdfLayer, UsdStage, UsdObject, UsdProperty, UsdAttribute, UsdRelationship, UsdPrim
-- **Test Status**: All SdfLayer tests passing, UsdRelationship tests passing
+- **Completed Classes**: TfToken, VtValue, SdfPath, SdfLayer, UsdStage, UsdObject, UsdProperty, UsdAttribute, UsdRelationship, UsdPrim, UsdEditTarget
+- **Test Status**: All SdfLayer tests passing, UsdRelationship tests passing, UsdPrim tests passing
 - **Recent Completions**: 
   - SdfLayer fully implemented (Save, Export, IsDirty, Clear, Reload, FindOrOpen)
   - UsdPrim fully implemented (hierarchy navigation, active flags, metadata, kind classification, instance/prototype handling)
+  - UsdEditTarget fully implemented (path mapping, layer routing, UsdEditContext RAII pattern, UsdStage integration)
 
 ### Development Workflow
 
@@ -91,7 +92,7 @@ Implementation order based on dependencies:
 10. **UsdPrim** ✅ - Core scene graph node with property management (COMPLETED: all 32 missing methods implemented)
 
 #### Phase 3: Composition Classes 🚧 IN PROGRESS
-11. **UsdEditTarget** 🚧 - Stub implementation exists, needs full implementation
+11. **UsdEditTarget** ✅ - Edit target mapping and layer routing (COMPLETED: path mapping, factory methods, UsdEditContext)
 12. **UsdReferences** ⏳ - Reference composition (planned)
 13. **UsdPayloads** ⏳ - Optional content loading (planned)
 14. **UsdVariantSets** ⏳ - Variant composition (planned)
@@ -116,11 +117,11 @@ Implementation order based on dependencies:
 
 ### Next Priority Items
 Based on current completion, the next logical steps are:
-1. **Complete UsdEditTarget** - Required for proper scene modification
-2. **Implement UsdReferences** - Core composition feature  
-3. **Add comprehensive time-sampling** - Enhanced UsdAttribute functionality
-4. **Scene traversal utilities** - UsdPrimRange and iteration helpers
-5. **Create comprehensive UsdPrim tests** - Verify all 32 implemented methods work correctly
+1. **Implement UsdReferences** - Core composition feature for USD scene referencing
+2. **Add comprehensive time-sampling** - Enhanced UsdAttribute functionality with keyframes
+3. **Scene traversal utilities** - UsdPrimRange and iteration helpers for stage traversal
+4. **USD File I/O Support** - Actual USD file format reading/writing
+5. **Schema Foundation** - UsdSchemaBase and UsdAPISchemaBase for typed schemas
 
 ## Important Reminders
 - Always check `../OpenUSD` for C++ reference implementation

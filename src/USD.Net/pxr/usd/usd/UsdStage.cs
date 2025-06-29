@@ -23,6 +23,7 @@ public sealed class UsdStage
     private UsdTimeCode _endTimeCode = UsdTimeCode.Create(100.0);
     private double _timeCodesPerSecond = 24.0;
     private double _framesPerSecond = 24.0;
+    private UsdEditTarget _editTarget;
 
     private UsdStage(SdfLayer rootLayer, SdfLayer? sessionLayer = null, ArResolverContext? resolverContext = null)
     {
@@ -32,6 +33,11 @@ public sealed class UsdStage
         _layerStack.Add(_rootLayer);
         if (_sessionLayer != null)
             _layerStack.Insert(0, _sessionLayer);
+        
+        // Initialize edit target to the session layer if available, otherwise root layer
+        _editTarget = sessionLayer != null 
+            ? UsdEditTarget.ForSessionLayer(sessionLayer)
+            : UsdEditTarget.ForLocalLayer(rootLayer);
     }
 
     #region Stage Creation and Lifetime
@@ -100,6 +106,67 @@ public sealed class UsdStage
     /// Get the resolver context for this stage.
     /// </summary>
     public ArResolverContext GetPathResolverContext() => _resolverContext;
+
+    #endregion
+
+    #region Edit Target Management
+
+    /// <summary>
+    /// Get the current edit target for this stage.
+    /// </summary>
+    public UsdEditTarget GetEditTarget()
+    {
+        return _editTarget;
+    }
+
+    /// <summary>
+    /// Set the current edit target for this stage.
+    /// </summary>
+    public void SetEditTarget(UsdEditTarget editTarget)
+    {
+        if (!editTarget.IsValid())
+        {
+            throw new ArgumentException("Cannot set an invalid UsdEditTarget as current", nameof(editTarget));
+        }
+
+        // Validate that the edit target's layer is in our layer stack
+        var targetLayer = editTarget.GetLayer();
+        if (targetLayer != null && !_layerStack.Contains(targetLayer))
+        {
+            throw new ArgumentException("Edit target layer must be in the stage's layer stack", nameof(editTarget));
+        }
+
+        _editTarget = editTarget;
+    }
+
+    /// <summary>
+    /// Get an edit target for the specified layer in the stage's layer stack.
+    /// </summary>
+    public UsdEditTarget GetEditTargetForLocalLayer(SdfLayer layer)
+    {
+        if (!_layerStack.Contains(layer))
+        {
+            throw new ArgumentException("Layer must be in the stage's layer stack", nameof(layer));
+        }
+
+        return UsdEditTarget.ForLocalLayer(layer);
+    }
+
+    /// <summary>
+    /// Get an edit target for the root layer.
+    /// </summary>
+    public UsdEditTarget GetEditTargetForRootLayer()
+    {
+        return UsdEditTarget.ForLocalLayer(_rootLayer);
+    }
+
+    /// <summary>
+    /// Get an edit target for the session layer, if one exists.
+    /// </summary>
+    public UsdEditTarget? GetEditTargetForSessionLayer()
+    {
+        return _sessionLayer != null ? UsdEditTarget.ForSessionLayer(_sessionLayer) : null;
+    }
 
     #endregion
 
@@ -330,7 +397,7 @@ public sealed class UsdStage
         var flattenedLayer = SdfLayer.CreateAnonymous("flattened");
 
         if (addSourceFileComment)
-            flattenedLayer.SetMetadata("comment", new VtValue($"Flattened from stage with root layer: {_rootLayer.GetIdentifier()}"));
+            flattenedLayer.SetMetadata(new TfToken("comment"), new VtValue($"Flattened from stage with root layer: {_rootLayer.GetIdentifier()}"));
 
         // TODO: Implement proper layer composition and flattening
         // For now, just copy metadata from root layer
