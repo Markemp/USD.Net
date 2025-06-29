@@ -112,10 +112,10 @@ public sealed class UsdStage
     {
         if (path.IsEmpty())
             return new UsdPrim(); // Invalid prim
-        
+
         if (_primIndex.TryGetValue(path, out var existingPrim))
             return existingPrim;
-            
+
         // Return invalid prim if not found
         return new UsdPrim();
     }
@@ -127,32 +127,27 @@ public sealed class UsdStage
     {
         if (path.IsEmpty() || !path.IsAbsolutePath())
             throw new ArgumentException("Path must be absolute and non-empty", nameof(path));
-            
+
         // Ensure parent prims exist
         var parentPath = path.GetParentPath();
         if (!parentPath.IsEmpty() && !parentPath.IsAbsoluteRootPath())
-        {
             DefinePrim(parentPath);
-        }
-        
+
         // Create or get existing prim
         if (_primIndex.TryGetValue(path, out var existingPrim))
         {
             // Update type name if provided
             if (typeName.HasValue && !typeName.Value.IsEmpty)
-            {
                 existingPrim.SetTypeName(typeName.Value.GetText());
-            }
+
             return existingPrim;
         }
-        
+
         // Create new prim
         var newPrim = new UsdPrim(this, path);
         if (typeName.HasValue && !typeName.Value.IsEmpty)
-        {
             newPrim.SetTypeName(typeName.Value.GetText());
-        }
-        
+
         _primIndex[path] = newPrim;
         return newPrim;
     }
@@ -161,17 +156,12 @@ public sealed class UsdStage
     /// Define a new prim at the given path (string overload).
     /// </summary>
     public UsdPrim DefinePrim(string path, TfToken? typeName = null)
-    {
-        return DefinePrim(new SdfPath(path), typeName);
-    }
+        => DefinePrim(new SdfPath(path), typeName);
 
     /// <summary>
     /// Ensure a prim exists at the given path, creating it if necessary.
     /// </summary>
-    public UsdPrim OverridePrim(SdfPath path)
-    {
-        return DefinePrim(path);
-    }
+    public UsdPrim OverridePrim(SdfPath path) => DefinePrim(path);
 
     /// <summary>
     /// Remove a prim at the given path.
@@ -180,32 +170,27 @@ public sealed class UsdStage
     {
         if (path.IsEmpty())
             return false;
-            
+
         // Remove all descendant prims first
         var toRemove = new List<SdfPath>();
         foreach (var kvp in _primIndex)
         {
             if (kvp.Key.HasPrefix(path))
-            {
                 toRemove.Add(kvp.Key);
-            }
         }
-        
+
         foreach (var pathToRemove in toRemove)
         {
             _primIndex.Remove(pathToRemove);
         }
-        
+
         return toRemove.Count > 0;
     }
 
     /// <summary>
     /// Get the default prim for this stage.
     /// </summary>
-    public UsdPrim? GetDefaultPrim()
-    {
-        return _defaultPrim;
-    }
+    public UsdPrim? GetDefaultPrim() => _defaultPrim;
 
     /// <summary>
     /// Set the default prim for this stage.
@@ -343,19 +328,17 @@ public sealed class UsdStage
     {
         // Create a new layer to contain flattened content
         var flattenedLayer = SdfLayer.CreateAnonymous("flattened");
-        
+
         if (addSourceFileComment)
-        {
             flattenedLayer.SetMetadata("comment", new VtValue($"Flattened from stage with root layer: {_rootLayer.GetIdentifier()}"));
-        }
-        
+
         // TODO: Implement proper layer composition and flattening
         // For now, just copy metadata from root layer
         foreach (var kvp in _rootLayer.GetType().GetProperties())
         {
             // This is a placeholder - proper implementation would flatten all composition
         }
-        
+
         return flattenedLayer;
     }
 
@@ -375,18 +358,12 @@ public sealed class UsdStage
     /// <summary>
     /// Get metadata from this stage.
     /// </summary>
-    public VtValue GetMetadata(TfToken key)
-    {
-        return _rootLayer.GetMetadata(key);
-    }
+    public VtValue GetMetadata(TfToken key) => _rootLayer.GetMetadata(key);
 
     /// <summary>
     /// Return true if this stage has metadata with the given key.
     /// </summary>
-    public bool HasMetadata(TfToken key)
-    {
-        return _rootLayer.HasMetadata(key);
-    }
+    public bool HasMetadata(TfToken key) => _rootLayer.HasMetadata(key);
 
     /// <summary>
     /// Clear metadata with the given key.
@@ -404,10 +381,7 @@ public sealed class UsdStage
     /// <summary>
     /// Get the start time code for this stage.
     /// </summary>
-    public UsdTimeCode GetStartTimeCode()
-    {
-        return _startTimeCode;
-    }
+    public UsdTimeCode GetStartTimeCode() => _startTimeCode;
 
     /// <summary>
     /// Set the start time code for this stage.
@@ -420,10 +394,7 @@ public sealed class UsdStage
     /// <summary>
     /// Get the end time code for this stage.
     /// </summary>
-    public UsdTimeCode GetEndTimeCode()
-    {
-        return _endTimeCode;
-    }
+    public UsdTimeCode GetEndTimeCode() => _endTimeCode;
 
     /// <summary>
     /// Set the end time code for this stage.
@@ -436,10 +407,7 @@ public sealed class UsdStage
     /// <summary>
     /// Get the time samples per second for this stage.
     /// </summary>
-    public double GetTimeCodesPerSecond()
-    {
-        return _timeCodesPerSecond;
-    }
+    public double GetTimeCodesPerSecond() => _timeCodesPerSecond;
 
     /// <summary>
     /// Set the time samples per second for this stage.
@@ -452,10 +420,7 @@ public sealed class UsdStage
     /// <summary>
     /// Get the frames per second for this stage.
     /// </summary>
-    public double GetFramesPerSecond()
-    {
-        return _framesPerSecond;
-    }
+    public double GetFramesPerSecond() => _framesPerSecond;
 
     /// <summary>
     /// Set the frames per second for this stage.
