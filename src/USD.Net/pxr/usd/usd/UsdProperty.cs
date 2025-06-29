@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;

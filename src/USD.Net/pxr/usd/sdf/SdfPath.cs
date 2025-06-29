@@ -14,10 +14,16 @@ public readonly struct SdfPath : IEquatable<SdfPath>, IComparable<SdfPath>
 
     public SdfPath(string pathString)
     {
-        _pathString = pathString?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(pathString));
+        if (pathString == null)
+            throw new ArgumentNullException(nameof(pathString));
+            
+        _pathString = pathString.TrimEnd('/');
         
-        if (string.IsNullOrEmpty(_pathString))
+        // Only convert empty to root if it was originally just "/"
+        if (pathString == "/")
             _pathString = "/";
+        else if (string.IsNullOrEmpty(_pathString))
+            _pathString = string.Empty; // Keep empty as empty
     }
 
     /// <summary>
@@ -63,6 +69,15 @@ public readonly struct SdfPath : IEquatable<SdfPath>, IComparable<SdfPath>
         if (IsEmpty() || IsAbsoluteRootPath())
             return EmptyPath();
 
+        // For property paths, the parent is the prim (before the dot)
+        if (IsPropertyPath())
+        {
+            var dotIndex = _pathString.LastIndexOf('.');
+            if (dotIndex > 0)
+                return new SdfPath(_pathString.Substring(0, dotIndex));
+        }
+
+        // For prim paths, the parent is the path before the last slash
         var lastSlash = _pathString.LastIndexOf('/');
         if (lastSlash <= 0)
             return AbsoluteRootPath();
@@ -79,7 +94,16 @@ public readonly struct SdfPath : IEquatable<SdfPath>, IComparable<SdfPath>
             return string.Empty;
 
         var lastSlash = _pathString.LastIndexOf('/');
-        return lastSlash >= 0 ? _pathString.Substring(lastSlash + 1) : _pathString;
+        var pathAfterSlash = lastSlash >= 0 ? _pathString.Substring(lastSlash + 1) : _pathString;
+        
+        // For property paths, return just the property name (after the dot)
+        if (IsPropertyPath())
+        {
+            var dotIndex = pathAfterSlash.LastIndexOf('.');
+            return dotIndex >= 0 ? pathAfterSlash.Substring(dotIndex + 1) : pathAfterSlash;
+        }
+        
+        return pathAfterSlash;
     }
 
     /// <summary>

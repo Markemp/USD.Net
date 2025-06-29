@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -283,7 +284,19 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdRelationship CreateRelationship(string name, bool custom = false)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(name))
+            throw new ArgumentException("Relationship name cannot be null or empty", nameof(name));
+
+        var stage = GetStage();
+        if (stage == null)
+            return new UsdRelationship(); // Invalid relationship
+
+        var relationshipPath = GetPath().AppendProperty(name);
+        var relationship = new UsdRelationship(stage, relationshipPath);
+        relationship.SetCustom(custom);
+        
+        _relationships[name] = relationship;
+        return relationship;
     }
     
     /// <summary>
@@ -291,7 +304,10 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdRelationship GetRelationship(string name)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrEmpty(name))
+            return new UsdRelationship();
+
+        return _relationships.TryGetValue(name, out var relationship) ? relationship : new UsdRelationship();
     }
     
     /// <summary>
@@ -299,7 +315,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasRelationship(string name)
     {
-        throw new NotImplementedException();
+        return !string.IsNullOrEmpty(name) && _relationships.ContainsKey(name);
     }
     
     /// <summary>
@@ -307,7 +323,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public IEnumerable<UsdRelationship> GetRelationships()
     {
-        throw new NotImplementedException();
+        return _relationships.Values.Where(rel => rel.IsValid());
     }
     
     #endregion

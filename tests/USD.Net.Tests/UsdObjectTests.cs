@@ -1,3 +1,4 @@
+using System.Linq;
 using Pxr.Usd;
 using Pxr.Usd.Sdf;
 using Xunit;

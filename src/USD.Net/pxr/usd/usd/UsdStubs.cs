@@ -19,12 +19,6 @@ public class UsdStagePopulationMask
 
 
 
-/// <summary>
-/// Placeholder class for UsdRelationship.
-/// </summary>
-public class UsdRelationship
-{
-}
 
 /// <summary>
 /// Placeholder class for UsdReferences.

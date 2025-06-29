@@ -158,6 +158,14 @@ public sealed class UsdStage
     }
 
     /// <summary>
+    /// Define a new prim at the given path (string overload).
+    /// </summary>
+    public UsdPrim DefinePrim(string path, TfToken? typeName = null)
+    {
+        return DefinePrim(new SdfPath(path), typeName);
+    }
+
+    /// <summary>
     /// Ensure a prim exists at the given path, creating it if necessary.
     /// </summary>
     public UsdPrim OverridePrim(SdfPath path)

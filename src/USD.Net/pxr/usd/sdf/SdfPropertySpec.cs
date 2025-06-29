@@ -25,11 +25,3 @@ public struct SdfLayerOffset
     }
 }
 
-/// <summary>
-/// Placeholder class for UsdEditTarget.
-/// Represents a target for editing operations.
-/// </summary>
-public class UsdEditTarget
-{
-    // TODO: Implement UsdEditTarget functionality
-}
