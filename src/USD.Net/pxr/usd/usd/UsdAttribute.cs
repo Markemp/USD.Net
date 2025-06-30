@@ -194,18 +194,64 @@ public class UsdAttribute : UsdProperty
             return true;
         }
 
-        // TODO: Implement proper time interpolation between samples
-        var timeDouble = time.GetValue();
-        var closestSample = _timeSamples.Keys
-            .Where(t => !t.IsDefault())
-            .OrderBy(t => Math.Abs(t.GetValue() - timeDouble))
-            .FirstOrDefault();
+        // Implement proper time interpolation between samples
+        return GetInterpolatedValue(time, out value);
+    }
 
-        if (closestSample.IsDefault())
+    /// <summary>
+    /// Get interpolated value between time samples.
+    /// </summary>
+    private bool GetInterpolatedValue(UsdTimeCode time, out VtValue value)
+    {
+        value = VtValue.CreateEmpty();
+
+        if (!GetBracketingTimeSamples(time.GetValue(), out var lower, out var upper, out var hasTimeSamples))
+        {
+            // No time samples, try default value
+            if (_defaultValue != null)
+            {
+                value = _defaultValue;
+                return true;
+            }
             return false;
+        }
 
-        value = _timeSamples[closestSample];
-        return true;
+        var lowerTime = UsdTimeCode.Create(lower);
+        var upperTime = UsdTimeCode.Create(upper);
+
+        // Get the bracketing values
+        if (!_timeSamples.TryGetValue(lowerTime, out var lowerValue))
+            lowerValue = VtValue.CreateEmpty();
+        if (!_timeSamples.TryGetValue(upperTime, out var upperValue))
+            upperValue = VtValue.CreateEmpty();
+
+        // If we have exact time match
+        if (Math.Abs(lower - time.GetValue()) < UsdTimeCode.SafeStep())
+        {
+            value = lowerValue;
+            return !lowerValue.IsEmpty();
+        }
+        if (Math.Abs(upper - time.GetValue()) < UsdTimeCode.SafeStep())
+        {
+            value = upperValue;
+            return !upperValue.IsEmpty();
+        }
+
+        // Interpolate between values
+        if (Math.Abs(upper - lower) < UsdTimeCode.SafeStep())
+        {
+            // Same time samples, use either one
+            value = lowerValue.IsEmpty() ? upperValue : lowerValue;
+            return !value.IsEmpty();
+        }
+
+        // Calculate parametric time
+        var alpha = (time.GetValue() - lower) / (upper - lower);
+
+        // TODO: Use stage interpolation setting - for now default to held
+        var interpolationType = UsdInterpolationType.Held;
+
+        return UsdInterpolation.Interpolate(lowerValue, upperValue, alpha, interpolationType, out value);
     }
 
     /// <summary>

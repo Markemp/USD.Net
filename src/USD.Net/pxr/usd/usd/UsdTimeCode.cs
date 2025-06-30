@@ -33,6 +33,12 @@ public readonly struct UsdTimeCode : IEquatable<UsdTimeCode>, IComparable<UsdTim
     public static UsdTimeCode EarliestTime() => new(double.NegativeInfinity);
 
     /// <summary>
+    /// Get the safe step value for creating distinct time samples.
+    /// This provides a reasonable epsilon for floating-point time comparisons.
+    /// </summary>
+    public static double SafeStep() => 1e-6;
+
+    /// <summary>
     /// Return true if this is the default time code.
     /// </summary>
     public bool IsDefault() => _isDefault;
@@ -59,6 +65,36 @@ public readonly struct UsdTimeCode : IEquatable<UsdTimeCode>, IComparable<UsdTim
 
     public static implicit operator UsdTimeCode(double time) => Create(time);
     public static explicit operator double(UsdTimeCode timeCode) => timeCode.GetValue();
+
+    /// <summary>
+    /// Add a time offset to a time code.
+    /// </summary>
+    public static UsdTimeCode operator +(UsdTimeCode timeCode, double offset)
+    {
+        if (timeCode._isDefault || timeCode.IsEarliestTime())
+            return timeCode; // Special values are unchanged by arithmetic
+        return new UsdTimeCode(timeCode._value + offset);
+    }
+
+    /// <summary>
+    /// Subtract a time offset from a time code.
+    /// </summary>
+    public static UsdTimeCode operator -(UsdTimeCode timeCode, double offset)
+    {
+        if (timeCode._isDefault || timeCode.IsEarliestTime())
+            return timeCode; // Special values are unchanged by arithmetic
+        return new UsdTimeCode(timeCode._value - offset);
+    }
+
+    /// <summary>
+    /// Get the difference between two time codes.
+    /// </summary>
+    public static double operator -(UsdTimeCode left, UsdTimeCode right)
+    {
+        if (left._isDefault || right._isDefault)
+            return 0.0; // Default time differences are zero
+        return left._value - right._value;
+    }
 
     public bool Equals(UsdTimeCode other)
     {

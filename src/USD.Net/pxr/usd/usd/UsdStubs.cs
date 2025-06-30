@@ -35,12 +35,6 @@ public class UsdSpecializes
 {
 }
 
-/// <summary>
-/// Placeholder class for UsdVariantSets.
-/// </summary>
-public class UsdVariantSets
-{
-}
 
 /// <summary>
 /// Base class for USD schema types.

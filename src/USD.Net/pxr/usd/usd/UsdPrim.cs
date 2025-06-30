@@ -653,8 +653,15 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdVariantSets GetVariantSets()
     {
-        // TODO: Implement when UsdVariantSets is available
-        return new UsdVariantSets();
+        return new UsdVariantSets(this);
+    }
+    
+    /// <summary>
+    /// Return a specific variant set by name.
+    /// </summary>
+    public UsdVariantSet GetVariantSet(string variantSetName)
+    {
+        return GetVariantSets().GetVariantSet(variantSetName);
     }
     
     #endregion
