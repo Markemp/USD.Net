@@ -635,8 +635,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdInherits GetInherits()
     {
-        // TODO: Implement when UsdInherits is available
-        return new UsdInherits();
+        return new UsdInherits(this);
     }
     
     /// <summary>

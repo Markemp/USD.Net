@@ -21,12 +21,6 @@ public class UsdStagePopulationMask
 
 
 
-/// <summary>
-/// Placeholder class for UsdInherits.
-/// </summary>
-public class UsdInherits
-{
-}
 
 /// <summary>
 /// Placeholder class for UsdSpecializes.
