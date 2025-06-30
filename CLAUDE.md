@@ -11,7 +11,7 @@ USD.Net is a C# implementation of Pixar's Universal Scene Description (USD) form
 - **Tests**: `tests/USD.Net.Tests/` - Unit tests for the library
 - **Namespace Structure**: Follows USD C++ structure with `Pxr.*` namespaces
   - `Pxr.Base.Tf` - Foundation types (TfToken)
-  - `Pxr.Base.Vt` - Value types (VtValue)
+  - `Pxr.Base.Vt` - Value types (VtValue - use native C# types when possible)
   - `Pxr.Usd.Sdf` - Scene description foundation (SdfPath, SdfLayer)
   - `Pxr.Usd` - Main USD classes (UsdStage, UsdPrim, UsdAttribute, UsdRelationship)
 
@@ -68,6 +68,11 @@ Implementation order based on dependencies:
 - **Nullable Reference Types**: Enabled in project
 - **Method Naming**: Follow C++ USD naming conventions exactly
 - **Error Handling**: Return invalid objects rather than throwing exceptions (USD pattern)
+- **Type Mapping**: Use native C# types instead of custom value type wrappers:
+  - Use `Dictionary<string, object>` instead of `VtDictionary`
+  - Use `List<T>` instead of custom list types
+  - Use built-in .NET types whenever possible
+  - Only create custom types when USD semantics require it (e.g., SdfPath, TfToken)
 
 ### Testing Strategy
 - **Unit Tests**: Comprehensive coverage in `tests/USD.Net.Tests/`
@@ -93,7 +98,7 @@ Implementation order based on dependencies:
 
 #### Phase 3: Composition Classes 🚧 IN PROGRESS
 11. **UsdEditTarget** ✅ - Edit target mapping and layer routing (COMPLETED: path mapping, factory methods, UsdEditContext)
-12. **UsdReferences** ⏳ - Reference composition (planned)
+12. **UsdReferences** ✅ - Reference composition (COMPLETED: SdfReference, SdfLayerOffset, UsdListPosition, comprehensive tests)
 13. **UsdPayloads** ⏳ - Optional content loading (planned)
 14. **UsdVariantSets** ⏳ - Variant composition (planned)
 

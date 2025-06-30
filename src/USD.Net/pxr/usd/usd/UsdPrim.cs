@@ -619,8 +619,15 @@ public class UsdPrim : UsdObject
     /// </summary>
     public UsdReferences GetReferences()
     {
-        // TODO: Implement when UsdReferences is available
-        return new UsdReferences();
+        return new UsdReferences(this);
+    }
+    
+    /// <summary>
+    /// Return this prim's payloads.
+    /// </summary>
+    public UsdPayloads GetPayloads()
+    {
+        return new UsdPayloads(this);
     }
     
     /// <summary>

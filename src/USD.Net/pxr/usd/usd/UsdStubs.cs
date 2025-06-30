@@ -20,12 +20,6 @@ public class UsdStagePopulationMask
 
 
 
-/// <summary>
-/// Placeholder class for UsdReferences.
-/// </summary>
-public class UsdReferences
-{
-}
 
 /// <summary>
 /// Placeholder class for UsdInherits.

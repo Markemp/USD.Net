@@ -492,28 +492,3 @@ public enum UsdVariability
     Uniform
 }
 
-/// <summary>
-/// Enumeration for list editing positions.
-/// </summary>
-public enum UsdListPosition
-{
-    /// <summary>
-    /// Add to the front of the prepend list.
-    /// </summary>
-    FrontOfPrependList,
-    
-    /// <summary>
-    /// Add to the back of the prepend list.
-    /// </summary>
-    BackOfPrependList,
-    
-    /// <summary>
-    /// Add to the front of the append list.
-    /// </summary>
-    FrontOfAppendList,
-    
-    /// <summary>
-    /// Add to the back of the append list.
-    /// </summary>
-    BackOfAppendList
-}
