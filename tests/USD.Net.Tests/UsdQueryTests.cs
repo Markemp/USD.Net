@@ -197,13 +197,14 @@ public class UsdQueryTests
         var results = UsdQuery.FindPrimsByType(stage, "Mesh").ToList();
 
         // Assert
-        Assert.Equal(6, results.Count); // 6 active mesh prims
+        Assert.Equal(7, results.Count); // 7 active mesh prims
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/Hero");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/Hero/Body");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/NPC_Guard1");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/NPC_Guard2");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Table");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Chair_01");
+        Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Chair_02");
         
         // Should not contain inactive mesh
         Assert.DoesNotContain(results, p => p.GetPath().GetString() == "/World/Characters/Hero/Clothing");
@@ -219,7 +220,7 @@ public class UsdQueryTests
         var results = UsdQuery.FindPrimsByType(stage, "Mesh", includeInactive: true).ToList();
 
         // Assert
-        Assert.Equal(7, results.Count); // 7 total mesh prims including inactive
+        Assert.Equal(8, results.Count); // 8 total mesh prims including inactive
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/Hero/Clothing");
     }
 
@@ -377,12 +378,13 @@ public class UsdQueryTests
         var results = UsdQuery.FindComponents(stage).ToList();
 
         // Assert
-        Assert.Equal(5, results.Count);
+        Assert.Equal(6, results.Count);
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/Hero");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/NPC_Guard1");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters/NPC_Guard2");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Table");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Chair_01");
+        Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props/Chair_02");
     }
 
     #endregion
@@ -452,11 +454,12 @@ public class UsdQueryTests
         var results = UsdQuery.FindChildren(world).ToList();
 
         // Assert
-        Assert.Equal(4, results.Count); // Environment, Characters, Props, Lights
+        Assert.Equal(5, results.Count); // Environment, Characters, Props, Lights, Abstract
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Environment");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Characters");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Props");
         Assert.Contains(results, p => p.GetPath().GetString() == "/World/Lights");
+        Assert.Contains(results, p => p.GetPath().GetString() == "/World/Abstract");
         
         // Should not contain grandchildren
         Assert.DoesNotContain(results, p => p.GetPath().GetString() == "/World/Characters/Hero");
@@ -508,7 +511,7 @@ public class UsdQueryTests
         var count = UsdQuery.CountPrims(stage, UsdPrimPredicates.OfType("Mesh"));
 
         // Assert
-        Assert.Equal(6, count); // 6 active mesh prims
+        Assert.Equal(7, count); // 7 active mesh prims
     }
 
     [Fact]

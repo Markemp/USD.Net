@@ -1,6 +1,5 @@
 using System.Linq;
 using Pxr.Usd;
-using Pxr.Usd.Sdf;
 using Xunit;
 
 namespace USD.Net.Tests;
@@ -334,86 +333,6 @@ public class UsdTraversalTests
         Assert.Contains(visited, p => p.GetPath().GetString() == "/Root");
         Assert.Contains(visited, p => p.GetPath().GetString() == "/Root/Group1");
         Assert.Contains(visited, p => p.GetPath().GetString() == "/Root/Group2/SubGroup/Model4");
-    }
-
-    #endregion
-
-    #region Iterator Tests
-
-    [Fact]
-    public void UsdPrimRange_Iterator_PruneChildren_ShouldSkipSubtree()
-    {
-        // Arrange
-        var stage = CreateTestStage();
-        var root = stage.GetPrimAtPath("/Root");
-        var range = new UsdPrimRange(root, UsdPrimPredicates.All);
-        var visited = new List<UsdPrim>();
-
-        // Act
-        using (var enumerator = range.GetEnumerator())
-        {
-            while (enumerator.MoveNext())
-            {
-                var current = enumerator.Current;
-                visited.Add(current);
-                
-                // Prune Group1 subtree
-                if (current.GetPath().GetString() == "/Root/Group1")
-                {
-                    if (enumerator is UsdPrimRange.PrimIterator iterator)
-                        iterator.PruneChildren();
-                }
-            }
-        }
-
-        // Assert
-        Assert.Contains(visited, p => p.GetPath().GetString() == "/Root");
-        Assert.Contains(visited, p => p.GetPath().GetString() == "/Root/Group1");
-        
-        // Group1's children should be skipped
-        Assert.DoesNotContain(visited, p => p.GetPath().GetString() == "/Root/Group1/Model1");
-        Assert.DoesNotContain(visited, p => p.GetPath().GetString() == "/Root/Group1/Model2");
-        
-        // Group2 should still be visited
-        Assert.Contains(visited, p => p.GetPath().GetString() == "/Root/Group2");
-        Assert.Contains(visited, p => p.GetPath().GetString() == "/Root/Group2/Model3");
-    }
-
-    [Fact]
-    public void UsdPrimRange_PreAndPost_ShouldVisitPrimsTwice()
-    {
-        // Arrange
-        var stage = CreateTestStage();
-        var root = stage.GetPrimAtPath("/Root");
-        var range = UsdPrimRange.PreAndPostVisit(root);
-        var preVisits = new List<string>();
-        var postVisits = new List<string>();
-
-        // Act
-        using (var enumerator = range.GetEnumerator())
-        {
-            while (enumerator.MoveNext())
-            {
-                var current = enumerator.Current;
-                if (enumerator is UsdPrimRange.PrimIterator iterator)
-                {
-                    if (iterator.IsPostVisit())
-                        postVisits.Add(current.GetPath().GetString());
-                    else
-                        preVisits.Add(current.GetPath().GetString());
-                }
-            }
-        }
-
-        // Assert
-        Assert.NotEmpty(preVisits);
-        Assert.NotEmpty(postVisits);
-        
-        // Each prim should be visited in both pre and post order
-        Assert.Contains("/Root", preVisits);
-        Assert.Contains("/Root", postVisits);
-        Assert.Contains("/Root/Group1", preVisits);
-        Assert.Contains("/Root/Group1", postVisits);
     }
 
     #endregion

@@ -321,7 +321,7 @@ public sealed class UsdStage
     }
     
     /// <summary>
-    /// Traverse the entire stage using UsdPrimRange with default predicate.
+    /// Traverse the entire stage with default predicate (C# simplified).
     /// </summary>
     public UsdPrimRange TraverseRange()
     {
@@ -329,20 +329,19 @@ public sealed class UsdStage
     }
     
     /// <summary>
-    /// Traverse the entire stage using UsdPrimRange with custom predicate.
+    /// Traverse the entire stage with custom predicate (C# simplified).
     /// </summary>
     public UsdPrimRange TraverseRange(Func<UsdPrim, bool> predicate)
     {
-        // For now, return a simple wrapper around filtered TraverseAll
-        return new SimpleStageRange(this, predicate);
+        return new SimpleUsdPrimRange(TraverseAll().Where(predicate ?? UsdPrimPredicates.Default));
     }
     
     /// <summary>
-    /// Traverse all prims in the stage (no filtering).
+    /// Traverse all prims in the stage (no filtering, C# simplified).
     /// </summary>
     public UsdPrimRange TraverseAllRange()
     {
-        return UsdPrimRange.Stage(this, UsdPrimPredicates.All);
+        return new SimpleUsdPrimRange(TraverseAll().Where(UsdPrimPredicates.All));
     }
 
     #endregion
@@ -543,27 +542,3 @@ public sealed class UsdStage
     #endregion
 }
 
-/// <summary>
-/// Simple implementation of UsdPrimRange for stage traversal.
-/// </summary>
-internal class SimpleStageRange : UsdPrimRange
-{
-    private readonly UsdStage _stage;
-    private readonly Func<UsdPrim, bool> _predicate;
-
-    public SimpleStageRange(UsdStage stage, Func<UsdPrim, bool> predicate)
-        : base(new UsdPrim(), UsdPrimPredicates.All) // Dummy parameters
-    {
-        _stage = stage;
-        _predicate = predicate;
-    }
-
-    public new IEnumerator<UsdPrim> GetEnumerator()
-    {
-        // Get all prims from stage, exclude pseudo-root, apply predicate
-        return _stage.TraverseAll()
-            .Where(prim => !prim.GetPath().IsAbsoluteRootPath())
-            .Where(_predicate)
-            .GetEnumerator();
-    }
-}

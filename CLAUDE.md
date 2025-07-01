@@ -19,7 +19,7 @@ USD.Net is a C# implementation of Pixar's Universal Scene Description (USD) form
 - **Target Framework**: .NET 9
 - **Language Features**: File-scoped namespaces
 - **Coding Style**: No comments unless explicitly requested
-- **dotnet CLI**: NOT available in current environment - tests must be run manually by user
+- **dotnet CLI**: Available - can run `dotnet build`, `dotnet test`, etc.
 
 ### Key Implementation Notes
 
@@ -57,7 +57,7 @@ Implementation order based on dependencies:
 4. **Create Equivalent Tests**: Ensure USD.Net has comprehensive tests matching C++ behavior
 
 #### When Debugging Test Failures
-1. **Run Tests Manually**: User must run tests (dotnet CLI not available)
+1. **Run Tests**: Use `dotnet test` to run all tests
 2. **Check Path Handling**: Many issues relate to SdfPath property vs prim path handling
 3. **Verify Method Signatures**: Ensure C# API matches expected USD patterns
 4. **Reference USD Documentation**: Use https://openusd.org/release/api/ for API reference
@@ -68,6 +68,11 @@ Implementation order based on dependencies:
 - **Nullable Reference Types**: Enabled in project
 - **Method Naming**: Follow C++ USD naming conventions exactly
 - **Error Handling**: Return invalid objects rather than throwing exceptions (USD pattern)
+- **Prefer C# Idioms**: Always use C# equivalents over C++ patterns when possible:
+  - Use LINQ + `yield return` for traversal instead of complex iterator classes
+  - Use `IEnumerable<T>` with simple recursion for tree traversal
+  - Prefer C# collection patterns over low-level pointer-style iteration
+  - Use C# functional patterns (LINQ, delegates) over C++ callback patterns
 - **Type Mapping**: Use native C# types instead of custom value type wrappers:
   - Use `Dictionary<string, object>` instead of `VtDictionary`
   - Use `List<T>` instead of custom list types
@@ -134,6 +139,6 @@ Based on current completion, the next logical steps are:
 ## Important Reminders
 - Always check `../OpenUSD` for C++ reference implementation
 - Find and review corresponding test files in OpenUSD when implementing classes
-- User must run tests manually - provide clear instructions when needed
+- Use `dotnet test` to run tests and `dotnet build` to build the project
 - Path handling (prim vs property paths) is a common source of bugs
 - Follow USD's error handling patterns (return invalid objects, don't throw)

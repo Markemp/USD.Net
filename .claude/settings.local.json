@@ -10,7 +10,10 @@
       "Bash(dotnet test:*)",
       "Bash(find:*)",
       "Bash(dotnet build)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(dotnet run:*)",
+      "Bash(rm:*)",
+      "Bash(dotnet build:*)"
     ],
     "deny": []
   }

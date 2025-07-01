@@ -16,32 +16,42 @@ public static class UsdQuery
 
     /// <summary>
     /// Find all prims matching a path pattern (supports wildcards).
+    /// Uses C# optimizations: direct lookup for exact paths, LINQ filtering for patterns.
     /// </summary>
     public static IEnumerable<UsdPrim> FindPrimsByPath(UsdStage stage, string pathPattern)
     {
         if (stage == null) throw new ArgumentNullException(nameof(stage));
         if (string.IsNullOrEmpty(pathPattern)) return Enumerable.Empty<UsdPrim>();
 
-        // Convert wildcard pattern to regex
+        // C# optimization: for exact paths (no wildcards), use direct lookup
+        if (!pathPattern.Contains('*') && !pathPattern.Contains('?'))
+        {
+            var prim = stage.GetPrimAtPath(new SdfPath(pathPattern));
+            return prim.IsValid() ? new[] { prim } : Enumerable.Empty<UsdPrim>();
+        }
+
+        // For wildcard patterns, use regex with simplified traversal
         var regexPattern = "^" + Regex.Escape(pathPattern)
             .Replace("\\*", ".*")
             .Replace("\\?", ".") + "$";
         
         var regex = new Regex(regexPattern, RegexOptions.Compiled);
 
-        return stage.TraverseAllRange()
-            .Where(prim => regex.IsMatch(prim.GetPath().GetString()));
+        return stage.TraverseAll()
+            .Where(prim => prim.IsValid() && regex.IsMatch(prim.GetPath().GetString()));
     }
 
     /// <summary>
     /// Find a single prim by exact path.
+    /// Returns null if the prim doesn't exist (C# pattern).
     /// </summary>
     public static UsdPrim? FindPrimByPath(UsdStage stage, string path)
     {
         if (stage == null) throw new ArgumentNullException(nameof(stage));
         if (string.IsNullOrEmpty(path)) return null;
 
-        return stage.GetPrimAtPath(new SdfPath(path));
+        var prim = stage.GetPrimAtPath(new SdfPath(path));
+        return prim.IsValid() ? prim : null;
     }
 
     #endregion
@@ -60,7 +70,7 @@ public static class UsdQuery
         var typeFilter = UsdPrimPredicates.OfType(typeName);
         var combined = UsdPrimPredicates.And(predicate, typeFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -78,7 +88,7 @@ public static class UsdQuery
         var typeFilter = UsdPrimPredicates.OfType(typeArray);
         var combined = UsdPrimPredicates.And(predicate, typeFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -105,7 +115,7 @@ public static class UsdQuery
         var nameFilter = UsdPrimPredicates.WithName(n => n == name);
         var combined = UsdPrimPredicates.And(predicate, nameFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -127,7 +137,7 @@ public static class UsdQuery
         var nameFilter = UsdPrimPredicates.WithName(name => regex.IsMatch(name));
         var combined = UsdPrimPredicates.And(predicate, nameFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -143,7 +153,7 @@ public static class UsdQuery
         var nameFilter = UsdPrimPredicates.WithName(name => name.Contains(substring, comparison));
         var combined = UsdPrimPredicates.And(predicate, nameFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     #endregion
@@ -161,7 +171,7 @@ public static class UsdQuery
         var modelFilter = UsdPrimPredicates.Models;
         var combined = UsdPrimPredicates.And(predicate, modelFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -175,7 +185,7 @@ public static class UsdQuery
         var groupFilter = UsdPrimPredicates.Groups;
         var combined = UsdPrimPredicates.And(predicate, groupFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -189,7 +199,7 @@ public static class UsdQuery
         var componentFilter = UsdPrimPredicates.Components;
         var combined = UsdPrimPredicates.And(predicate, componentFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     #endregion
@@ -208,7 +218,7 @@ public static class UsdQuery
         var attrFilter = new Func<UsdPrim, bool>(prim => prim.HasAttribute(attributeName));
         var combined = UsdPrimPredicates.And(predicate, attrFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>
@@ -235,7 +245,33 @@ public static class UsdQuery
         });
         var combined = UsdPrimPredicates.And(predicate, attrFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
+    }
+
+    /// <summary>
+    /// Find all prims where an attribute has a specific string value.
+    /// </summary>
+    public static IEnumerable<UsdPrim> FindPrimsByAttributeValue(UsdStage stage, string attributeName, string value, bool includeInactive = false)
+    {
+        if (stage == null) throw new ArgumentNullException(nameof(stage));
+        if (string.IsNullOrEmpty(attributeName)) return Enumerable.Empty<UsdPrim>();
+
+        var predicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
+        var attrFilter = new Func<UsdPrim, bool>(prim =>
+        {
+            var attr = prim.GetAttribute(attributeName);
+            if (!attr.IsValid()) return false;
+
+            if (attr.Get(out var attrValue))
+            {
+                var currentValue = attrValue.GetValue()?.ToString();
+                return string.Equals(currentValue, value, StringComparison.Ordinal);
+            }
+            return false;
+        });
+        var combined = UsdPrimPredicates.And(predicate, attrFilter);
+
+        return stage.TraverseAll().Where(combined);
     }
 
     #endregion
@@ -254,7 +290,7 @@ public static class UsdQuery
         var relFilter = new Func<UsdPrim, bool>(prim => prim.HasRelationship(relationshipName));
         var combined = UsdPrimPredicates.And(predicate, relFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     #endregion
@@ -276,15 +312,27 @@ public static class UsdQuery
 
     /// <summary>
     /// Find all direct children of a prim matching a predicate.
+    /// By default, includes all children (including abstract) unless a predicate is provided.
     /// </summary>
     public static IEnumerable<UsdPrim> FindChildren(UsdPrim prim, Func<UsdPrim, bool>? predicate = null, bool includeInactive = false)
     {
         if (!prim.IsValid()) return Enumerable.Empty<UsdPrim>();
 
-        var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
-        var finalPredicate = predicate != null ? UsdPrimPredicates.And(basePredicate, predicate) : basePredicate;
-
-        return prim.GetChildren().Where(finalPredicate);
+        // For direct children, we want all children by default (including abstract)
+        // Only apply filtering if a specific predicate is provided
+        if (predicate == null)
+        {
+            // No predicate - return all children, filtering only by active state if requested
+            var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Active;
+            return prim.GetChildren().Where(basePredicate);
+        }
+        else
+        {
+            // Predicate provided - combine with base predicate
+            var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
+            var finalPredicate = UsdPrimPredicates.And(basePredicate, predicate);
+            return prim.GetChildren().Where(finalPredicate);
+        }
     }
 
     /// <summary>
@@ -336,7 +384,7 @@ public static class UsdQuery
         var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
         var combined = UsdPrimPredicates.And(basePredicate, predicate);
 
-        return stage.TraverseRange(combined).Count();
+        return stage.TraverseAll().Where(combined).Count();
     }
 
     /// <summary>
@@ -350,7 +398,7 @@ public static class UsdQuery
         var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
         var combined = UsdPrimPredicates.And(basePredicate, predicate);
 
-        return stage.TraverseRange(combined).Any();
+        return stage.TraverseAll().Where(combined).Any();
     }
 
     /// <summary>
@@ -362,7 +410,7 @@ public static class UsdQuery
         if (predicate == null) throw new ArgumentNullException(nameof(predicate));
 
         var basePredicate = includeInactive ? UsdPrimPredicates.All : UsdPrimPredicates.Default;
-        var allPrims = stage.TraverseRange(basePredicate);
+        var allPrims = stage.TraverseAll().Where(basePredicate);
 
         return allPrims.All(predicate);
     }
@@ -409,7 +457,7 @@ public static class UsdQuery
         }
 
         var combinedPredicate = UsdPrimPredicates.And(predicates.ToArray());
-        IEnumerable<UsdPrim> results = stage.TraverseRange(combinedPredicate);
+        IEnumerable<UsdPrim> results = stage.TraverseAll().Where(combinedPredicate);
 
         // Apply path pattern filtering if specified
         if (!string.IsNullOrEmpty(pathPattern))
@@ -435,7 +483,7 @@ public static class UsdQuery
         var leafFilter = new Func<UsdPrim, bool>(prim => !prim.GetChildren().Any());
         var combined = UsdPrimPredicates.And(predicate, leafFilter);
 
-        return stage.TraverseRange(combined);
+        return stage.TraverseAll().Where(combined);
     }
 
     /// <summary>

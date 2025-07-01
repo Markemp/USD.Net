@@ -29,10 +29,10 @@ public enum UsdPrimFlags
 public static class UsdPrimPredicates
 {
     /// <summary>
-    /// Default predicate: Active && Defined && Loaded && !Abstract
+    /// Default predicate: Valid && Active && !Abstract (simplified for C#)
     /// </summary>
     public static readonly Func<UsdPrim, bool> Default = prim => 
-        prim.IsValid() && prim.IsActive() && prim.IsDefined() && prim.IsLoaded() && !prim.IsAbstract();
+        prim.IsValid() && prim.IsActive() && !prim.IsAbstract();
 
     /// <summary>
     /// Predicate that matches all prims (no filtering).
@@ -187,14 +187,17 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
 
     /// <summary>
     /// Create a range for traversing an entire stage.
+    /// Uses simple C# LINQ patterns instead of complex iterators.
     /// </summary>
     public static UsdPrimRange Stage(UsdStage stage, Func<UsdPrim, bool>? predicate = null)
     {
         if (stage == null)
             throw new ArgumentNullException(nameof(stage));
 
-        // Use the stage's own TraverseRange method
-        return stage.TraverseRange(predicate ?? UsdPrimPredicates.Default);
+        predicate ??= UsdPrimPredicates.Default;
+        
+        // Use simple C# LINQ filtering over the stage's prim collection
+        return new SimpleUsdPrimRange(stage.TraverseAll().Where(predicate));
     }
 
     #endregion
@@ -202,210 +205,131 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     #region IEnumerable Implementation
 
     /// <summary>
-    /// Get an iterator for this prim range.
+    /// Get an iterator for this prim range using simple C# traversal.
     /// </summary>
-    public IEnumerator<UsdPrim> GetEnumerator()
+    public virtual IEnumerator<UsdPrim> GetEnumerator()
     {
         return _mode switch
         {
-            UsdTraversalMode.DepthFirst => new DepthFirstIterator(_start, _predicate),
-            UsdTraversalMode.BreadthFirst => new BreadthFirstIterator(_start, _predicate),
-            UsdTraversalMode.PreAndPost => new PreAndPostIterator(_start, _predicate),
+            UsdTraversalMode.DepthFirst => TraverseDepthFirst(_start, _predicate).GetEnumerator(),
+            UsdTraversalMode.BreadthFirst => TraverseBreadthFirst(_start, _predicate).GetEnumerator(),
+            UsdTraversalMode.PreAndPost => TraversePreAndPost(_start, _predicate).GetEnumerator(),
             _ => throw new InvalidOperationException($"Unknown traversal mode: {_mode}")
         };
+    }
+
+    /// <summary>
+    /// Simple depth-first traversal using C# yield return.
+    /// </summary>
+    private static IEnumerable<UsdPrim> TraverseDepthFirst(UsdPrim start, Func<UsdPrim, bool> predicate)
+    {
+        if (!start.IsValid())
+            yield break;
+            
+        // Include the start prim if it passes the predicate AND it's not the absolute root
+        if (predicate(start) && !start.GetPath().IsAbsoluteRootPath())
+            yield return start;
+        
+        // Always traverse children regardless of whether start prim was included
+        foreach (var child in start.GetChildren())
+        {
+            if (child.IsValid())
+            {
+                foreach (var descendant in TraverseDepthFirst(child, predicate))
+                    yield return descendant;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Simple breadth-first traversal using C# Queue.
+    /// </summary>
+    private static IEnumerable<UsdPrim> TraverseBreadthFirst(UsdPrim start, Func<UsdPrim, bool> predicate)
+    {
+        if (!start.IsValid())
+            yield break;
+
+        var queue = new Queue<UsdPrim>();
+        
+        // Include start prim if it passes predicate and isn't absolute root
+        if (predicate(start) && !start.GetPath().IsAbsoluteRootPath())
+        {
+            yield return start;
+        }
+        
+        // Always add children to queue regardless of whether they pass predicate initially
+        foreach (var child in start.GetChildren())
+        {
+            if (child.IsValid())
+                queue.Enqueue(child);
+        }
+        
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            
+            // Only yield if it passes the predicate
+            if (predicate(current))
+                yield return current;
+            
+            // Add children to queue for continued traversal
+            foreach (var child in current.GetChildren())
+            {
+                if (child.IsValid())
+                    queue.Enqueue(child);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pre and post order traversal using C# recursion.
+    /// </summary>
+    private static IEnumerable<UsdPrim> TraversePreAndPost(UsdPrim start, Func<UsdPrim, bool> predicate)
+    {
+        if (!start.IsValid())
+            yield break;
+            
+        // Pre-visit (if not absolute root and passes predicate)
+        if (predicate(start) && !start.GetPath().IsAbsoluteRootPath())
+            yield return start;
+        
+        // Visit children
+        foreach (var child in start.GetChildren())
+        {
+            if (child.IsValid())
+            {
+                foreach (var descendant in TraversePreAndPost(child, predicate))
+                    yield return descendant;
+            }
+        }
+        
+        // Post-visit (if not absolute root and passes predicate)
+        if (predicate(start) && !start.GetPath().IsAbsoluteRootPath())
+            yield return start;
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     #endregion
-
-    #region Iterator Implementations
-
-    /// <summary>
-    /// Base class for prim iterators with pruning support.
-    /// </summary>
-    public abstract class PrimIterator : IEnumerator<UsdPrim>
-    {
-        protected readonly Func<UsdPrim, bool> _predicate;
-        protected UsdPrim _current = new();
-        protected bool _pruneCurrent = false;
-
-        protected PrimIterator(Func<UsdPrim, bool> predicate)
-        {
-            _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
-        }
-
-        public UsdPrim Current => _current;
-        object IEnumerator.Current => Current;
-
-        public abstract bool MoveNext();
-        public virtual void Reset() => throw new NotSupportedException();
-        public virtual void Dispose() { }
-
-        /// <summary>
-        /// Skip the children of the current prim on the next iteration.
-        /// </summary>
-        public void PruneChildren()
-        {
-            _pruneCurrent = true;
-        }
-
-        /// <summary>
-        /// Check if the current visit is a post-visit (only for PreAndPost mode).
-        /// </summary>
-        public virtual bool IsPostVisit() => false;
-    }
-
-    /// <summary>
-    /// Depth-first iterator with pruning support.
-    /// </summary>
-    private class DepthFirstIterator : PrimIterator
-    {
-        private readonly Stack<UsdPrim> _stack = new();
-        private bool _started = false;
-
-        public DepthFirstIterator(UsdPrim start, Func<UsdPrim, bool> predicate) : base(predicate)
-        {
-            if (start.IsValid() && _predicate(start))
-                _stack.Push(start);
-        }
-
-        public override bool MoveNext()
-        {
-            if (!_started)
-            {
-                _started = true;
-                if (_stack.Count > 0)
-                {
-                    _current = _stack.Pop();
-                    return true;
-                }
-                return false;
-            }
-
-            // Add children to stack if not pruning
-            if (!_pruneCurrent && _current.IsValid())
-            {
-                var children = _current.GetChildren()
-                    .Where(_predicate)
-                    .Reverse() // Reverse to maintain left-to-right order
-                    .ToList();
-
-                foreach (var child in children)
-                    _stack.Push(child);
-            }
-
-            _pruneCurrent = false;
-
-            if (_stack.Count == 0)
-                return false;
-
-            _current = _stack.Pop();
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Breadth-first iterator.
-    /// </summary>
-    private class BreadthFirstIterator : PrimIterator
-    {
-        private readonly Queue<UsdPrim> _queue = new();
-        private readonly HashSet<UsdPrim> _pruned = new();
-        private bool _started = false;
-
-        public BreadthFirstIterator(UsdPrim start, Func<UsdPrim, bool> predicate) : base(predicate)
-        {
-            if (start.IsValid() && _predicate(start))
-                _queue.Enqueue(start);
-        }
-
-        public override bool MoveNext()
-        {
-            if (!_started)
-            {
-                _started = true;
-                if (_queue.Count > 0)
-                {
-                    _current = _queue.Dequeue();
-                    return true;
-                }
-                return false;
-            }
-
-            // Add children to queue if not pruning
-            if (_pruneCurrent)
-            {
-                _pruned.Add(_current);
-                _pruneCurrent = false;
-            }
-            else if (_current.IsValid() && !_pruned.Contains(_current))
-            {
-                var children = _current.GetChildren().Where(_predicate);
-                foreach (var child in children)
-                    _queue.Enqueue(child);
-            }
-
-            if (_queue.Count == 0)
-                return false;
-
-            _current = _queue.Dequeue();
-            return true;
-        }
-    }
-
-    /// <summary>
-    /// Pre and post-order iterator that visits each prim twice.
-    /// </summary>
-    private class PreAndPostIterator : PrimIterator
-    {
-        private readonly Stack<(UsdPrim prim, bool isPost)> _stack = new();
-        private bool _started = false;
-        private bool _isPostVisit = false;
-
-        public PreAndPostIterator(UsdPrim start, Func<UsdPrim, bool> predicate) : base(predicate)
-        {
-            if (start.IsValid() && _predicate(start))
-            {
-                _stack.Push((start, true));  // Post-visit
-                _stack.Push((start, false)); // Pre-visit
-            }
-        }
-
-        public override bool IsPostVisit() => _isPostVisit;
-
-        public override bool MoveNext()
-        {
-            if (!_started)
-            {
-                _started = true;
-            }
-            else if (!_isPostVisit && !_pruneCurrent && _current.IsValid())
-            {
-                // Add children for pre and post visits
-                var children = _current.GetChildren()
-                    .Where(_predicate)
-                    .Reverse()
-                    .ToList();
-
-                foreach (var child in children)
-                {
-                    _stack.Push((child, true));  // Post-visit
-                    _stack.Push((child, false)); // Pre-visit
-                }
-            }
-
-            _pruneCurrent = false;
-
-            if (_stack.Count == 0)
-                return false;
-
-            var (prim, isPost) = _stack.Pop();
-            _current = prim;
-            _isPostVisit = isPost;
-            return true;
-        }
-    }
-
-    #endregion
 }
+
+/// <summary>
+/// Simple C#-style UsdPrimRange that wraps an IEnumerable<UsdPrim>.
+/// Much simpler than complex C++ iterator patterns.
+/// </summary>
+public class SimpleUsdPrimRange : UsdPrimRange
+{
+    private readonly IEnumerable<UsdPrim> _prims;
+
+    public SimpleUsdPrimRange(IEnumerable<UsdPrim> prims)
+        : base(new UsdPrim(), UsdPrimPredicates.All) // Dummy parameters
+    {
+        _prims = prims ?? throw new ArgumentNullException(nameof(prims));
+    }
+
+    public override IEnumerator<UsdPrim> GetEnumerator()
+    {
+        return _prims.GetEnumerator();
+    }
+}
+

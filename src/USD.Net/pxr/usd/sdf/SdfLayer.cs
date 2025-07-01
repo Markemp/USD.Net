@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 
@@ -12,7 +13,7 @@ public class SdfLayer
     private readonly Dictionary<string, object> _metadata = new();
     private readonly string _identifier;
     private bool _isDirty = false;
-    private static readonly Dictionary<string, SdfLayer> _layerRegistry = new();
+    private static readonly ConcurrentDictionary<string, SdfLayer> _layerRegistry = new();
 
     public SdfLayer(string identifier)
     {
