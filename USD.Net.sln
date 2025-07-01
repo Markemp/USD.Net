@@ -14,6 +14,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USD.Net", "src\USD.Net\USD.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USD.Net.Tests", "tests\USD.Net.Tests\USD.Net.Tests.csproj", "{B3FE74E1-B743-11D0-AE1A-00A0C90FFFC4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CLAUDE.md = CLAUDE.md
+		LICENSE = LICENSE
+		README.md = README.md
+		test_path.cs = test_path.cs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
