@@ -188,6 +188,24 @@ public sealed class UsdStage
     }
 
     /// <summary>
+    /// Get the pseudo-root prim for this stage.
+    /// The pseudo-root serves as the parent for all root prims.
+    /// </summary>
+    public UsdPrim GetPseudoRoot()
+    {
+        var pseudoRootPath = SdfPath.AbsoluteRootPath();
+        
+        // Check if pseudo-root already exists
+        if (_primIndex.TryGetValue(pseudoRootPath, out var existingPseudoRoot))
+            return existingPseudoRoot;
+            
+        // Create pseudo-root if it doesn't exist
+        var pseudoRoot = new UsdPrim(this, pseudoRootPath);
+        _primIndex[pseudoRootPath] = pseudoRoot;
+        return pseudoRoot;
+    }
+
+    /// <summary>
     /// Define a new prim at the given path.
     /// </summary>
     public UsdPrim DefinePrim(SdfPath path, TfToken? typeName = null)
@@ -300,6 +318,31 @@ public sealed class UsdStage
     public IEnumerable<UsdPrim> TraverseAll()
     {
         return _primIndex.Values;
+    }
+    
+    /// <summary>
+    /// Traverse the entire stage using UsdPrimRange with default predicate.
+    /// </summary>
+    public UsdPrimRange TraverseRange()
+    {
+        return TraverseRange(UsdPrimPredicates.Default);
+    }
+    
+    /// <summary>
+    /// Traverse the entire stage using UsdPrimRange with custom predicate.
+    /// </summary>
+    public UsdPrimRange TraverseRange(Func<UsdPrim, bool> predicate)
+    {
+        // For now, return a simple wrapper around filtered TraverseAll
+        return new SimpleStageRange(this, predicate);
+    }
+    
+    /// <summary>
+    /// Traverse all prims in the stage (no filtering).
+    /// </summary>
+    public UsdPrimRange TraverseAllRange()
+    {
+        return UsdPrimRange.Stage(this, UsdPrimPredicates.All);
     }
 
     #endregion
@@ -498,4 +541,29 @@ public sealed class UsdStage
     }
 
     #endregion
+}
+
+/// <summary>
+/// Simple implementation of UsdPrimRange for stage traversal.
+/// </summary>
+internal class SimpleStageRange : UsdPrimRange
+{
+    private readonly UsdStage _stage;
+    private readonly Func<UsdPrim, bool> _predicate;
+
+    public SimpleStageRange(UsdStage stage, Func<UsdPrim, bool> predicate)
+        : base(new UsdPrim(), UsdPrimPredicates.All) // Dummy parameters
+    {
+        _stage = stage;
+        _predicate = predicate;
+    }
+
+    public new IEnumerator<UsdPrim> GetEnumerator()
+    {
+        // Get all prims from stage, exclude pseudo-root, apply predicate
+        return _stage.TraverseAll()
+            .Where(prim => !prim.GetPath().IsAbsoluteRootPath())
+            .Where(_predicate)
+            .GetEnumerator();
+    }
 }

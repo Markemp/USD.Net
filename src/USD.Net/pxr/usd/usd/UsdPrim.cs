@@ -215,6 +215,43 @@ public class UsdPrim : UsdObject
         return IsKindComponent(kind);
     }
     
+    /// <summary>
+    /// Return true if this prim is defined (has a defining specifier).
+    /// In USD, a prim is defined if it was created with DefinePrim() regardless of whether it has a type.
+    /// </summary>
+    public bool IsDefined()
+    {
+        // For now, assume all valid prims in our stage are defined
+        // since we're using DefinePrim() to create them
+        // TODO: Implement proper specifier tracking when we add full USD layer support
+        return IsValid();
+    }
+    
+    /// <summary>
+    /// Return true if this prim is abstract.
+    /// </summary>
+    public bool IsAbstract()
+    {
+        return GetMetadata<bool>("abstract");
+    }
+    
+    /// <summary>
+    /// Return true if this prim is loaded (payloads are loaded).
+    /// </summary>
+    public bool IsLoaded()
+    {
+        // For now, assume all prims are loaded since we don't have payload support yet
+        return IsValid();
+    }
+    
+    /// <summary>
+    /// Return the name of this prim.
+    /// </summary>
+    public override string GetName()
+    {
+        return IsValid() ? GetPath().GetName() : string.Empty;
+    }
+    
     #endregion
 
     #region Kind System Helpers
