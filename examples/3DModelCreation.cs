@@ -496,9 +496,24 @@ public static class ThreeDModelCreationExamples
     {
         try
         {
-            // For now, just print a message since we don't have file I/O implemented
-            Console.WriteLine($"Stage would be saved to: {filePath}");
-            Console.WriteLine("Note: File I/O not yet implemented in USD.Net");
+            Console.WriteLine($"Saving stage to: {filePath}");
+            
+            var success = stage.Export(filePath);
+            if (success)
+            {
+                Console.WriteLine($"✅ Successfully saved USD file: {filePath}");
+                
+                // Show file size
+                var fileInfo = new System.IO.FileInfo(filePath);
+                if (fileInfo.Exists)
+                {
+                    Console.WriteLine($"   File size: {fileInfo.Length:N0} bytes");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"❌ Failed to save USD file: {filePath}");
+            }
             
             // Print stage contents for debugging
             Console.WriteLine("\nStage contents:");

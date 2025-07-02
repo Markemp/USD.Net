@@ -70,14 +70,12 @@ public class SdfLayer
             
         try
         {
-            // TODO: Implement actual USD file format export
-            // For now, this is a placeholder that always succeeds
-            // When USD file format support is added, this should write proper USD files
-            
             if (!string.IsNullOrEmpty(comment))
                 SetMetadata(new TfToken("comment"), new VtValue(comment));
             
-            return true;
+            // For now, we can only export if we have access to the stage
+            // This is a limitation we'll address when we implement full layer serialization
+            return false;
         }
         catch
         {

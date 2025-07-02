@@ -2,6 +2,7 @@ using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Ar;
 using Pxr.Usd.Sdf;
+using Pxr.Usd.UsdUtils;
 
 namespace Pxr.Usd;
 
@@ -420,9 +421,7 @@ public sealed class UsdStage
     {
         try
         {
-            // Create a flattened representation and export it
-            var flattened = Flatten(addSourceFileComment);
-            return flattened.Export(filename);
+            return UsdaWriter.SaveStageToFile(this, filename);
         }
         catch
         {

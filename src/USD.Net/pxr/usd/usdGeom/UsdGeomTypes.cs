@@ -229,6 +229,24 @@ public struct GfMatrix4d : IEquatable<GfMatrix4d>
     public Matrix4x4 ToMatrix4x4() => _matrix;
     
     /// <summary>
+    /// Access matrix elements by linear index (row-major order).
+    /// </summary>
+    public float this[int index]
+    {
+        get
+        {
+            return index switch
+            {
+                0 => _matrix.M11, 1 => _matrix.M12, 2 => _matrix.M13, 3 => _matrix.M14,
+                4 => _matrix.M21, 5 => _matrix.M22, 6 => _matrix.M23, 7 => _matrix.M24,
+                8 => _matrix.M31, 9 => _matrix.M32, 10 => _matrix.M33, 11 => _matrix.M34,
+                12 => _matrix.M41, 13 => _matrix.M42, 14 => _matrix.M43, 15 => _matrix.M44,
+                _ => throw new ArgumentOutOfRangeException(nameof(index), "Matrix index must be 0-15")
+            };
+        }
+    }
+    
+    /// <summary>
     /// Multiply two transformation matrices.
     /// </summary>
     public static GfMatrix4d operator *(GfMatrix4d left, GfMatrix4d right) =>
