@@ -97,7 +97,11 @@ public abstract class UsdGeomBoundable : UsdGeomXformable
     /// </summary>
     public bool SetExtent(List<GfVec3f> extent, UsdTimeCode time = default)
     {
-        var extentAttr = CreateExtentAttr();
+        var extentAttr = GetExtentAttr();
+        if (!extentAttr.IsValid())
+        {
+            extentAttr = CreateExtentAttr();
+        }
         return extentAttr.Set(new VtValue(extent), time);
     }
     

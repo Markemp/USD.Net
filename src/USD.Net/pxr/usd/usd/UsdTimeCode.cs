@@ -64,6 +64,7 @@ public readonly struct UsdTimeCode : IEquatable<UsdTimeCode>, IComparable<UsdTim
     }
 
     public static implicit operator UsdTimeCode(double time) => Create(time);
+    public static implicit operator UsdTimeCode(int time) => Create(time);
     public static explicit operator double(UsdTimeCode timeCode) => timeCode.GetValue();
 
     /// <summary>

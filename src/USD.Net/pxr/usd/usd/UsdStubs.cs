@@ -28,5 +28,3 @@ public class UsdStagePopulationMask
 public class UsdSpecializes
 {
 }
-
-

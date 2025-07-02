@@ -275,15 +275,34 @@ public abstract class UsdGeomXformable : UsdGeomImageable
             return new UsdGeomXformOp(new UsdAttribute(), XformOpType.Invalid);
             
         // Add to xformOpOrder
-        var orderAttr = CreateXformOpOrderAttr();
-        if (orderAttr.Get(out List<string> currentOrder))
+        var orderAttr = GetXformOpOrderAttr();
+        if (!orderAttr.IsValid())
         {
-            currentOrder.Add(GetXformOpOrderToken(opType, opSuffix, isInverseOp).GetText());
+            orderAttr = CreateXformOpOrderAttr();
         }
-        else
+        
+        var newOpToken = GetXformOpOrderToken(opType, opSuffix, isInverseOp).GetText();
+        
+        // Get current order if it exists, otherwise start with empty list
+        var currentOrder = new List<string>();
+        if (orderAttr.IsValid())
         {
-            currentOrder = new List<string> { GetXformOpOrderToken(opType, opSuffix, isInverseOp).GetText() };
+            // Try to get as string array first
+            if (orderAttr.Get(out string[] orderArray))
+            {
+                currentOrder = orderArray.ToList();
+            }
+            else if (orderAttr.Get(out List<string> orderList))
+            {
+                currentOrder = orderList;
+            }
+            // If neither worked, currentOrder remains empty, which is correct
         }
+        
+        // Add the new operation to the order
+        currentOrder.Add(newOpToken);
+        
+        // Set the updated order
         orderAttr.Set(new VtValue(currentOrder.ToArray()));
         
         return new UsdGeomXformOp(attr, opType, isInverseOp);
@@ -323,7 +342,21 @@ public abstract class UsdGeomXformable : UsdGeomImageable
         var ops = new List<UsdGeomXformOp>();
         
         var orderAttr = GetXformOpOrderAttr();
-        if (!orderAttr.IsValid() || !orderAttr.Get(out List<string> opOrder))
+        if (!orderAttr.IsValid() || !orderAttr.HasValue())
+            return ops;
+            
+        // Try to get the order as string array first, then as List<string>
+        List<string>? opOrder = null;
+        if (orderAttr.Get(out string[] orderArray))
+        {
+            opOrder = orderArray.ToList();
+        }
+        else if (orderAttr.Get(out List<string> orderList))
+        {
+            opOrder = orderList;
+        }
+        
+        if (opOrder == null)
             return ops;
             
         foreach (var opToken in opOrder)
@@ -393,19 +426,27 @@ public abstract class UsdGeomXformable : UsdGeomImageable
     {
         var orderAttr = CreateXformOpOrderAttr();
         
-        if (orderAttr.Get(out List<string> currentOrder))
+        // Get current order if it exists
+        var currentOrder = new List<string>();
+        if (orderAttr.IsValid() && orderAttr.HasValue())
         {
-            // Remove any existing reset tokens
-            currentOrder = currentOrder.Where(op => op != "!resetXformStack!").ToList();
-            
-            if (resetXform)
+            if (orderAttr.Get(out string[] orderArray))
             {
-                currentOrder.Insert(0, "!resetXformStack!");
+                currentOrder = orderArray.ToList();
+            }
+            else if (orderAttr.Get(out List<string> orderList))
+            {
+                currentOrder = orderList;
             }
         }
-        else
+        
+        // Remove any existing reset tokens
+        currentOrder = currentOrder.Where(op => op != "!resetXformStack!").ToList();
+        
+        // Add reset token if requested
+        if (resetXform)
         {
-            currentOrder = resetXform ? new List<string> { "!resetXformStack!" } : new List<string>();
+            currentOrder.Insert(0, "!resetXformStack!");
         }
         
         return orderAttr.Set(new VtValue(currentOrder.ToArray()));
@@ -414,10 +455,19 @@ public abstract class UsdGeomXformable : UsdGeomImageable
     public bool GetResetXformStack()
     {
         var orderAttr = GetXformOpOrderAttr();
-        if (orderAttr.IsValid() && orderAttr.Get(out List<string> opOrder))
+        if (!orderAttr.IsValid() || !orderAttr.HasValue())
+            return false;
+            
+        // Try to get the order as string array first, then as List<string>
+        if (orderAttr.Get(out string[] orderArray))
         {
-            return opOrder.Contains("!resetXformStack!");
+            return orderArray.Contains("!resetXformStack!");
         }
+        else if (orderAttr.Get(out List<string> orderList))
+        {
+            return orderList.Contains("!resetXformStack!");
+        }
+        
         return false;
     }
     
