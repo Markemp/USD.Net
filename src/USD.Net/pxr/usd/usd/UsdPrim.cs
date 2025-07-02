@@ -12,69 +12,10 @@ namespace Pxr.Usd;
 /// </summary>
 public class UsdPrim : UsdObject
 {
-    private string _typeName = string.Empty;
     private readonly Dictionary<string, object> _metadata = new();
     private readonly Dictionary<string, UsdAttribute> _attributes = new();
     private readonly Dictionary<string, UsdRelationship> _relationships = new();
     private bool? _cachedActiveFlag = null;
-
-    #region Iterator Types
-    
-    public class SiblingIterator
-    {
-        private readonly IEnumerator<UsdPrim> _enumerator;
-        
-        internal SiblingIterator(IEnumerable<UsdPrim> siblings)
-        {
-            _enumerator = siblings.GetEnumerator();
-        }
-        
-        public bool MoveNext() => _enumerator.MoveNext();
-        public UsdPrim Current => _enumerator.Current;
-        public void Dispose() => _enumerator.Dispose();
-    }
-    
-    public class SiblingRange : IEnumerable<UsdPrim>
-    {
-        private readonly IEnumerable<UsdPrim> _siblings;
-        
-        internal SiblingRange(IEnumerable<UsdPrim> siblings)
-        {
-            _siblings = siblings;
-        }
-        
-        public IEnumerator<UsdPrim> GetEnumerator() => _siblings.GetEnumerator();
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-    
-    public class SubtreeIterator
-    {
-        private readonly IEnumerator<UsdPrim> _enumerator;
-        
-        internal SubtreeIterator(IEnumerable<UsdPrim> descendants)
-        {
-            _enumerator = descendants.GetEnumerator();
-        }
-        
-        public bool MoveNext() => _enumerator.MoveNext();
-        public UsdPrim Current => _enumerator.Current;
-        public void Dispose() => _enumerator.Dispose();
-    }
-    
-    public class SubtreeRange : IEnumerable<UsdPrim>
-    {
-        private readonly IEnumerable<UsdPrim> _descendants;
-        
-        internal SubtreeRange(IEnumerable<UsdPrim> descendants)
-        {
-            _descendants = descendants;
-        }
-        
-        public IEnumerator<UsdPrim> GetEnumerator() => _descendants.GetEnumerator();
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-    
-    #endregion
 
     #region Construction
     
@@ -96,20 +37,188 @@ public class UsdPrim : UsdObject
 
     #region Prim Metadata and Type Queries
     
+    #region Properties
+    
+    /// <summary>
+    /// This prim's composed type name.
+    /// </summary>
+    public string TypeName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Whether this prim is active and contributes to scene graph composition.
+    /// </summary>
+    public bool Active
+    {
+        get
+        {
+            if (!IsValid())
+                return false;
+                
+            // Check cached value first
+            if (_cachedActiveFlag.HasValue)
+                return _cachedActiveFlag.Value;
+                
+            // Check if there's authored active metadata
+            if (_metadata.TryGetValue("active", out var activeValue))
+            {
+                _cachedActiveFlag = activeValue is bool boolVal ? boolVal : true;
+                return _cachedActiveFlag.Value;
+            }
+            
+            // Default is active unless explicitly set to false
+            _cachedActiveFlag = true;
+            return true;
+        }
+        set
+        {
+            if (IsValid())
+            {
+                _metadata["active"] = value;
+                _cachedActiveFlag = value;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Whether this prim can be instanced.
+    /// </summary>
+    public bool Instanceable
+    {
+        get => IsValid() && _metadata.TryGetValue("instanceable", out var value) && value is bool boolVal && boolVal;
+        set
+        {
+            if (IsValid())
+                _metadata["instanceable"] = value;
+        }
+    }
+    
+    /// <summary>
+    /// Access to this prim's metadata.
+    /// </summary>
+    public object? this[string key]
+    {
+        get => IsValid() && !string.IsNullOrEmpty(key) && _metadata.TryGetValue(key, out var value) ? value : null;
+        set
+        {
+            if (IsValid() && !string.IsNullOrEmpty(key))
+            {
+                if (value == null)
+                    _metadata.Remove(key);
+                else
+                    _metadata[key] = value;
+                    
+                // Clear cached flags that might be affected
+                if (key == "active")
+                    _cachedActiveFlag = null;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Read-only access to this prim's attributes.
+    /// </summary>
+    public IReadOnlyDictionary<string, UsdAttribute> Attributes => _attributes;
+    
+    /// <summary>
+    /// Read-only access to this prim's relationships.
+    /// </summary>
+    public IReadOnlyDictionary<string, UsdRelationship> Relationships => _relationships;
+    
+    /// <summary>
+    /// Direct children of this prim.
+    /// </summary>
+    public IEnumerable<UsdPrim> Children
+    {
+        get
+        {
+            if (!IsValid())
+                return Enumerable.Empty<UsdPrim>();
+                
+            var stage = GetStage();
+            if (stage == null)
+                return Enumerable.Empty<UsdPrim>();
+                
+            // Get all prims from stage and filter for direct children
+            return stage.TraverseAll()
+                .Where(prim => prim.IsValid() && 
+                              prim.GetPath().GetParentPath().Equals(GetPath()) &&
+                              prim.GetPath() != GetPath()); // Exclude self
+        }
+    }
+    
+    /// <summary>
+    /// All descendant prims below this prim in the scene graph.
+    /// </summary>
+    public IEnumerable<UsdPrim> Descendants
+    {
+        get
+        {
+            if (!IsValid())
+                return Enumerable.Empty<UsdPrim>();
+                
+            var stage = GetStage();
+            if (stage == null)
+                return Enumerable.Empty<UsdPrim>();
+                
+            // Get all prims that have this prim's path as a prefix
+            return stage.TraverseAll()
+                .Where(prim => prim.IsValid() && 
+                              prim.GetPath().HasPrefix(GetPath()) &&
+                              prim.GetPath() != GetPath()); // Exclude self
+        }
+    }
+    
+    /// <summary>
+    /// Sibling prims of this prim.
+    /// </summary>
+    public IEnumerable<UsdPrim> Siblings
+    {
+        get
+        {
+            var parent = GetParent();
+            if (!parent.IsValid())
+                return Enumerable.Empty<UsdPrim>();
+                
+            // Get all children of parent, excluding self
+            return parent.Children.Where(prim => prim.GetPath() != GetPath());
+        }
+    }
+    
+    /// <summary>
+    /// This prim's parent.
+    /// </summary>
+    public UsdPrim? Parent
+    {
+        get
+        {
+            if (!IsValid())
+                return null;
+                
+            var parentPath = GetPath().GetParentPath();
+            if (parentPath.IsEmpty())
+                return null; // Root prim has no parent
+                
+            var stage = GetStage();
+            var parent = stage?.GetPrimAtPath(parentPath);
+            return parent?.IsValid() == true ? parent : null;
+        }
+    }
+    
+    #endregion
+    
+    #region USD API Compatibility Methods
+    
     /// <summary>
     /// Return this prim's composed type name.
     /// </summary>
-    public string GetTypeName()
-    {
-        return _typeName;
-    }
+    public string GetTypeName() => TypeName;
     
     /// <summary>
     /// Set this prim's type name.
     /// </summary>
     public bool SetTypeName(string typeName)
     {
-        _typeName = typeName ?? string.Empty;
+        TypeName = typeName ?? string.Empty;
         return true;
     }
     
@@ -118,53 +227,31 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ClearTypeName()
     {
-        _typeName = string.Empty;
+        TypeName = string.Empty;
         return true;
     }
     
     /// <summary>
     /// Return true if this prim has a type name.
     /// </summary>
-    public bool HasTypeName()
-    {
-        return !string.IsNullOrEmpty(_typeName);
-    }
+    public bool HasTypeName() => !string.IsNullOrEmpty(TypeName);
+    
+    #endregion
+    
+    #region Active Flag Management
     
     /// <summary>
     /// Return whether this prim is active, and thus contributes to scene graph composition.
     /// </summary>
-    public bool IsActive()
-    {
-        if (!IsValid())
-            return false;
-            
-        // Check cached value first
-        if (_cachedActiveFlag.HasValue)
-            return _cachedActiveFlag.Value;
-            
-        // Check if there's authored active metadata
-        if (_metadata.TryGetValue("active", out var activeValue))
-        {
-            _cachedActiveFlag = activeValue is bool boolVal ? boolVal : true;
-            return _cachedActiveFlag.Value;
-        }
-        
-        // Default is active unless explicitly set to false
-        _cachedActiveFlag = true;
-        return true;
-    }
+    public bool IsActive() => Active;
     
     /// <summary>
     /// Author scene description for this prim to set its active flag.
     /// </summary>
     public bool SetActive(bool active)
     {
-        if (!IsValid())
-            return false;
-            
-        _metadata["active"] = active;
-        _cachedActiveFlag = active;
-        return true;
+        Active = active;
+        return IsValid();
     }
     
     /// <summary>
@@ -183,10 +270,11 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return true if this prim has an authored active opinion.
     /// </summary>
-    public bool HasAuthoredActive()
-    {
-        return _metadata.ContainsKey("active");
-    }
+    public bool HasAuthoredActive() => _metadata.ContainsKey("active");
+    
+    #endregion
+    
+    #region Model Classification
     
     /// <summary>
     /// Return true if this prim is a model.
@@ -253,6 +341,8 @@ public class UsdPrim : UsdObject
     }
     
     #endregion
+    
+    #endregion
 
     #region Kind System Helpers
     
@@ -295,100 +385,42 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return this prim's parent prim.
     /// </summary>
-    public UsdPrim GetParent()
-    {
-        if (!IsValid())
-            return new UsdPrim();
-            
-        var parentPath = GetPath().GetParentPath();
-        if (parentPath.IsEmpty())
-            return new UsdPrim(); // Root prim has no parent
-            
-        var stage = GetStage();
-        return stage?.GetPrimAtPath(parentPath) ?? new UsdPrim();
-    }
+    public UsdPrim GetParent() => Parent ?? new UsdPrim();
     
     /// <summary>
     /// Return a forward iterator over this prim's direct child prims.
     /// </summary>
-    public SiblingRange GetChildren()
-    {
-        if (!IsValid())
-            return new SiblingRange(Enumerable.Empty<UsdPrim>());
-            
-        var stage = GetStage();
-        if (stage == null)
-            return new SiblingRange(Enumerable.Empty<UsdPrim>());
-            
-        // Get all prims from stage and filter for direct children
-        var children = stage.TraverseAll()
-            .Where(prim => prim.IsValid() && 
-                          prim.GetPath().GetParentPath().Equals(GetPath()))
-            .Where(prim => prim.GetPath() != GetPath()); // Exclude self
-            
-        return new SiblingRange(children);
-    }
+    public IEnumerable<UsdPrim> GetChildren() => Children;
     
     /// <summary>
     /// Return a filtered view of this prim's direct child prims.
     /// </summary>
-    public SiblingRange GetFilteredChildren(Func<UsdPrim, bool> predicate)
+    public IEnumerable<UsdPrim> GetFilteredChildren(Func<UsdPrim, bool> predicate)
     {
-        if (predicate == null)
-            return GetChildren();
-            
-        var children = GetChildren().Where(predicate);
-        return new SiblingRange(children);
+        return predicate == null ? Children : Children.Where(predicate);
     }
     
     /// <summary>
     /// Return all descendant prims below this prim in the scene graph.
     /// </summary>
-    public SubtreeRange GetDescendants()
-    {
-        if (!IsValid())
-            return new SubtreeRange(Enumerable.Empty<UsdPrim>());
-            
-        var stage = GetStage();
-        if (stage == null)
-            return new SubtreeRange(Enumerable.Empty<UsdPrim>());
-            
-        // Get all prims that have this prim's path as a prefix
-        var descendants = stage.TraverseAll()
-            .Where(prim => prim.IsValid() && 
-                          prim.GetPath().HasPrefix(GetPath()) &&
-                          prim.GetPath() != GetPath()); // Exclude self
-            
-        return new SubtreeRange(descendants);
-    }
+    public IEnumerable<UsdPrim> GetDescendants() => Descendants;
     
     /// <summary>
     /// Return a range containing the sibling prims of this prim.
     /// </summary>
-    public SiblingRange GetSiblings()
-    {
-        var parent = GetParent();
-        if (!parent.IsValid())
-            return new SiblingRange(Enumerable.Empty<UsdPrim>());
-            
-        // Get all children of parent, excluding self
-        var siblings = parent.GetChildren()
-            .Where(prim => prim.GetPath() != GetPath());
-            
-        return new SiblingRange(siblings);
-    }
+    public IEnumerable<UsdPrim> GetSiblings() => Siblings;
     
     /// <summary>
     /// Return this prim's next sibling if it has one, otherwise return an invalid UsdPrim.
     /// </summary>
     public UsdPrim GetNextSibling()
     {
-        var parent = GetParent();
-        if (!parent.IsValid())
+        var parent = Parent;
+        if (parent == null)
             return new UsdPrim();
             
         // Get all children of parent (including self)
-        var allChildren = parent.GetChildren().ToList();
+        var allChildren = parent.Children.ToList();
         if (allChildren.Count == 0)
             return new UsdPrim();
             
@@ -480,10 +512,12 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return all of this prim's attributes.
     /// </summary>
-    public IEnumerable<UsdAttribute> GetAttributes()
-    {
-        return _attributes.Values.Where(attr => attr.IsValid());
-    }
+    public IEnumerable<UsdAttribute> GetAttributes() => Attributes.Values.Where(attr => attr.IsValid());
+    
+    /// <summary>
+    /// Return all valid attributes as a list.
+    /// </summary>
+    public List<UsdAttribute> GetAllAttributes() => Attributes.Values.Where(attr => attr.IsValid()).ToList();
     
     /// <summary>
     /// Create a relationship with the given name.
@@ -527,10 +561,12 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return all of this prim's relationships.
     /// </summary>
-    public IEnumerable<UsdRelationship> GetRelationships()
-    {
-        return _relationships.Values.Where(rel => rel.IsValid());
-    }
+    public IEnumerable<UsdRelationship> GetRelationships() => Relationships.Values.Where(rel => rel.IsValid());
+    
+    /// <summary>
+    /// Return all valid relationships as a list.
+    /// </summary>
+    public List<UsdRelationship> GetAllRelationships() => Relationships.Values.Where(rel => rel.IsValid()).ToList();
     
     #endregion
 
@@ -588,25 +624,15 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return true if this prim can be instanced.
     /// </summary>
-    public bool IsInstanceable()
-    {
-        if (!IsValid())
-            return false;
-            
-        return _metadata.TryGetValue("instanceable", out var value) && 
-               value is bool boolVal && boolVal;
-    }
+    public bool IsInstanceable() => Instanceable;
     
     /// <summary>
     /// Set whether this prim can be instanced.
     /// </summary>
     public bool SetInstanceable(bool instanceable)
     {
-        if (!IsValid())
-            return false;
-            
-        _metadata["instanceable"] = instanceable;
-        return true;
+        Instanceable = instanceable;
+        return IsValid();
     }
     
     /// <summary>
