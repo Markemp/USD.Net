@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Pxr.Base.Tf;
-using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -12,9 +7,9 @@ namespace Pxr.Usd;
 /// </summary>
 public class UsdPrim : UsdObject
 {
-    private readonly Dictionary<string, object> _metadata = new();
-    private readonly Dictionary<string, UsdAttribute> _attributes = new();
-    private readonly Dictionary<string, UsdRelationship> _relationships = new();
+    private readonly Dictionary<string, object> _metadata = [];
+    private readonly Dictionary<string, UsdAttribute> _attributes = [];
+    private readonly Dictionary<string, UsdRelationship> _relationships = [];
     private bool? _cachedActiveFlag = null;
 
     #region Construction
@@ -577,8 +572,7 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsA<T>() where T : UsdSchemaBase
     {
-        // TODO: Implement when UsdSchemaBase is available
-        return false;
+        return IsA(typeof(T));
     }
     
     /// <summary>
@@ -586,8 +580,11 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool IsA(Type schemaType)
     {
-        // TODO: Implement when UsdSchemaBase is available
-        return false;
+        if (!IsValid() || schemaType == null)
+            return false;
+            
+        var registry = UsdSchemaRegistry.Instance;
+        return registry.IsSchemaCompatibleWithPrim(schemaType, this);
     }
     
     /// <summary>
@@ -595,8 +592,56 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool HasAPI<T>() where T : UsdAPISchemaBase
     {
-        // TODO: Implement when UsdAPISchemaBase is available
-        return false;
+        return HasAPI(typeof(T));
+    }
+    
+    /// <summary>
+    /// Return true if this prim has an applied API schema with instance name.
+    /// </summary>
+    public bool HasAPI<T>(string instanceName) where T : UsdAPISchemaBase
+    {
+        return HasAPI(typeof(T), instanceName);
+    }
+    
+    /// <summary>
+    /// Return true if this prim has an applied API schema.
+    /// </summary>
+    public bool HasAPI(Type apiSchemaType)
+    {
+        return HasAPI(apiSchemaType, string.Empty);
+    }
+    
+    /// <summary>
+    /// Return true if this prim has an applied API schema with instance name.
+    /// </summary>
+    public bool HasAPI(Type apiSchemaType, string instanceName)
+    {
+        if (!IsValid() || apiSchemaType == null)
+            return false;
+            
+        var registry = UsdSchemaRegistry.Instance;
+        var schemaInfo = registry.FindSchemaInfo(apiSchemaType);
+        
+        if (schemaInfo == null)
+            return false;
+            
+        // For now, simplified implementation
+        // TODO: Implement proper API schema tracking in metadata when available
+        // Check if this type appears in our applied schemas metadata
+        var appliedSchemas = GetMetadata<string[]>("apiSchemas") ?? new string[0];
+        var schemaName = schemaInfo.Identifier.GetText();
+        
+        if (schemaInfo.Kind == UsdSchemaKind.MultipleApplyAPI && !string.IsNullOrEmpty(instanceName))
+        {
+            // For multiple-apply APIs, look for "SchemaName:InstanceName"
+            var fullName = $"{schemaName}:{instanceName}";
+            return appliedSchemas.Contains(fullName);
+        }
+        else
+        {
+            // For single-apply APIs, just look for the schema name
+            return appliedSchemas.Contains(schemaName);
+        }
     }
     
     /// <summary>
@@ -604,8 +649,61 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool ApplyAPI<T>() where T : UsdAPISchemaBase
     {
-        // TODO: Implement when UsdAPISchemaBase is available
-        return false;
+        return ApplyAPI(typeof(T));
+    }
+    
+    /// <summary>
+    /// Apply an API schema to this prim with instance name.
+    /// </summary>
+    public bool ApplyAPI<T>(string instanceName) where T : UsdAPISchemaBase
+    {
+        return ApplyAPI(typeof(T), instanceName);
+    }
+    
+    /// <summary>
+    /// Apply an API schema to this prim.
+    /// </summary>
+    public bool ApplyAPI(Type apiSchemaType)
+    {
+        return ApplyAPI(apiSchemaType, string.Empty);
+    }
+    
+    /// <summary>
+    /// Apply an API schema to this prim with instance name.
+    /// </summary>
+    public bool ApplyAPI(Type apiSchemaType, string instanceName)
+    {
+        if (!IsValid() || apiSchemaType == null)
+            return false;
+            
+        var registry = UsdSchemaRegistry.Instance;
+        var schemaInfo = registry.FindSchemaInfo(apiSchemaType);
+        
+        if (schemaInfo == null)
+            return false;
+            
+        // Get current applied schemas
+        var appliedSchemas = GetMetadata<string[]>("apiSchemas")?.ToList() ?? new List<string>();
+        var schemaName = schemaInfo.Identifier.GetText();
+        
+        string fullSchemaName;
+        if (schemaInfo.Kind == UsdSchemaKind.MultipleApplyAPI && !string.IsNullOrEmpty(instanceName))
+        {
+            fullSchemaName = $"{schemaName}:{instanceName}";
+        }
+        else
+        {
+            fullSchemaName = schemaName;
+        }
+        
+        // Add if not already present
+        if (!appliedSchemas.Contains(fullSchemaName))
+        {
+            appliedSchemas.Add(fullSchemaName);
+            SetMetadata("apiSchemas", appliedSchemas.ToArray());
+        }
+        
+        return true;
     }
     
     /// <summary>
@@ -613,7 +711,60 @@ public class UsdPrim : UsdObject
     /// </summary>
     public bool RemoveAPI<T>() where T : UsdAPISchemaBase
     {
-        // TODO: Implement when UsdAPISchemaBase is available
+        return RemoveAPI(typeof(T));
+    }
+    
+    /// <summary>
+    /// Remove an applied API schema from this prim with instance name.
+    /// </summary>
+    public bool RemoveAPI<T>(string instanceName) where T : UsdAPISchemaBase
+    {
+        return RemoveAPI(typeof(T), instanceName);
+    }
+    
+    /// <summary>
+    /// Remove an applied API schema from this prim.
+    /// </summary>
+    public bool RemoveAPI(Type apiSchemaType)
+    {
+        return RemoveAPI(apiSchemaType, string.Empty);
+    }
+    
+    /// <summary>
+    /// Remove an applied API schema from this prim with instance name.
+    /// </summary>
+    public bool RemoveAPI(Type apiSchemaType, string instanceName)
+    {
+        if (!IsValid() || apiSchemaType == null)
+            return false;
+            
+        var registry = UsdSchemaRegistry.Instance;
+        var schemaInfo = registry.FindSchemaInfo(apiSchemaType);
+        
+        if (schemaInfo == null)
+            return false;
+            
+        // Get current applied schemas
+        var appliedSchemas = GetMetadata<string[]>("apiSchemas")?.ToList() ?? new List<string>();
+        var schemaName = schemaInfo.Identifier.GetText();
+        
+        string fullSchemaName;
+        if (schemaInfo.Kind == UsdSchemaKind.MultipleApplyAPI && !string.IsNullOrEmpty(instanceName))
+        {
+            fullSchemaName = $"{schemaName}:{instanceName}";
+        }
+        else
+        {
+            fullSchemaName = schemaName;
+        }
+        
+        // Remove if present
+        if (appliedSchemas.Remove(fullSchemaName))
+        {
+            SetMetadata("apiSchemas", appliedSchemas.ToArray());
+            return true;
+        }
+        
         return false;
     }
     

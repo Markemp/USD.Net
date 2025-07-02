@@ -30,16 +30,3 @@ public class UsdSpecializes
 }
 
 
-/// <summary>
-/// Base class for USD schema types.
-/// </summary>
-public abstract class UsdSchemaBase
-{
-}
-
-/// <summary>
-/// Base class for USD API schema types.
-/// </summary>
-public abstract class UsdAPISchemaBase
-{
-}
