@@ -275,5 +275,18 @@ public abstract class UsdGeomBoundable : UsdGeomXformable
                min.X <= max.X && min.Y <= max.Y && min.Z <= max.Z;
     }
     
+    /// <summary>
+    /// Update the extent based on the current geometry.
+    /// This is called automatically when geometry-affecting properties change.
+    /// Derived classes should override ComputeExtentFromGeometry to provide specific logic.
+    /// </summary>
+    protected virtual void UpdateExtentFromGeometry()
+    {
+        if (ComputeExtentFromGeometry(UsdTimeCode.Default(), out var extent))
+        {
+            SetExtent(extent);
+        }
+    }
+    
     #endregion
 }
