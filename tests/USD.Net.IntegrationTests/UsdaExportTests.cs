@@ -6,11 +6,13 @@ using Pxr.Usd;
 using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
 
-namespace USD.Net.Tests;
+namespace USD.Net.IntegrationTests;
 
+[Trait("Category", "Integration")]
 public class UsdaExportTests
 {
     [Fact]
+    [Trait("Category", "Integration")]
     public void TestBasicUsdaExport()
     {
         // Create a simple stage with a sphere
@@ -38,6 +40,7 @@ public class UsdaExportTests
     }
     
     [Fact]
+    [Trait("Category", "Integration")]
     public void TestComplexSceneExport()
     {
         // Create a hierarchical scene

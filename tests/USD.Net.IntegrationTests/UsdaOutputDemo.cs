@@ -6,11 +6,13 @@ using Pxr.Usd;
 using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
 
-namespace USD.Net.Tests;
+namespace USD.Net.IntegrationTests;
 
+[Trait("Category", "Integration")]
 public class UsdaOutputDemo
 {
     [Fact]
+    [Trait("Category", "Integration")]
     public void GenerateUsdaDemoFile()
     {
         // Create a scene similar to the 3D model examples

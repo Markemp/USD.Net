@@ -73,14 +73,57 @@ public class SdfLayer
             if (!string.IsNullOrEmpty(comment))
                 SetMetadata(new TfToken("comment"), new VtValue(comment));
             
-            // For now, we can only export if we have access to the stage
-            // This is a limitation we'll address when we implement full layer serialization
-            return false;
+            // Basic USDA export for layers
+            // TODO: Implement full layer serialization when we have proper layer content support
+            var content = new System.Text.StringBuilder();
+            content.AppendLine("#usda 1.0");
+            
+            // Write metadata if any
+            if (_metadata.Count > 0 || !string.IsNullOrEmpty(comment))
+            {
+                content.AppendLine("(");
+                
+                // Write comment first if present
+                if (_metadata.TryGetValue("comment", out var commentValue))
+                {
+                    content.AppendLine($"    doc = \"{commentValue}\"");
+                }
+                
+                // Write other metadata
+                foreach (var kvp in _metadata.Where(m => m.Key != "comment").OrderBy(m => m.Key))
+                {
+                    content.AppendLine($"    {kvp.Key} = {FormatMetadataValue(kvp.Value)}");
+                }
+                
+                content.AppendLine(")");
+            }
+            
+            // Write to file
+            System.IO.File.WriteAllText(filename, content.ToString());
+            return true;
         }
         catch
         {
             return false;
         }
+    }
+    
+    private string FormatMetadataValue(object value)
+    {
+        // Simple formatting for common types
+        if (value is string s)
+            return $"\"{s}\"";
+        else if (value is bool b)
+            return b ? "true" : "false";
+        else if (value is VtValue vt)
+        {
+            if (vt.IsHolding<string>())
+                return $"\"{vt.Get<string>()}\"";
+            else
+                return vt.ToString();
+        }
+        else
+            return value.ToString() ?? "None";
     }
 
     /// <summary>

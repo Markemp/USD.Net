@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
-using Pxr.Usd;
-using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
+using System.Text;
 
 namespace Pxr.Usd.UsdUtils;
 
@@ -62,7 +56,7 @@ public class UsdaWriter
 
         // Check for common layer metadata
         var defaultPrim = stage.GetDefaultPrim();
-        if (defaultPrim?.IsValid() == true)
+        if (defaultPrim?.IsValid() ?? false)
         {
             if (!hasMetadata)
             {
@@ -103,14 +97,10 @@ public class UsdaWriter
         var primName = prim.GetName();
 
         // Write prim definition
-        if (string.IsNullOrEmpty(typeName))
-        {
+        if (string.IsNullOrWhiteSpace(typeName))
             WriteLine($"def Xform \"{primName}\"");
-        }
         else
-        {
             WriteLine($"def {typeName} \"{primName}\"");
-        }
 
         WriteLine("{");
         _indentLevel++;
@@ -135,7 +125,7 @@ public class UsdaWriter
     private void WriteAttributes(UsdPrim prim)
     {
         var attributes = prim.GetAttributes();
-        
+
         // Sort attributes for consistent output
         var sortedAttrs = attributes.OrderBy(attr => attr.GetName()).ToList();
 
@@ -151,7 +141,7 @@ public class UsdaWriter
     private void WriteAttribute(UsdAttribute attr)
     {
         if (!attr.IsValid())
-            return;
+            return; 
 
         var attrName = attr.GetName();
         var typeName = attr.GetTypeName();
@@ -179,26 +169,18 @@ public class UsdaWriter
         {
             var valueStr = FormatValue(defaultValue, typeName);
             var typeStr = GetUsdTypeName(typeName);
-            
+
             if (attr.GetVariability() == UsdVariability.Uniform)
-            {
                 WriteLine($"uniform {typeStr} {attrName} = {valueStr}");
-            }
             else if (attrName.StartsWith("xformOp:"))
-            {
                 WriteLine($"custom {typeStr} {attrName} = {valueStr}");
-            }
             else
-            {
                 WriteLine($"{typeStr} {attrName} = {valueStr}");
-            }
         }
 
         // Write time samples if they exist
         if (hasTimeSamples)
-        {
             WriteTimeSamples(attr);
-        }
     }
 
     /// <summary>
@@ -391,14 +373,14 @@ public class UsdaWriter
         {
             var writer = new UsdaWriter();
             var usdaContent = writer.WriteStage(stage);
-            
+
             // Ensure directory exists
             var directory = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-            
+
             File.WriteAllText(filePath, usdaContent, Encoding.UTF8);
             return true;
         }
