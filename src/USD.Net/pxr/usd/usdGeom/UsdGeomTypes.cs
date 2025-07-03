@@ -265,6 +265,12 @@ public struct GfMatrix4d : IEquatable<GfMatrix4d>
         new GfMatrix4d(Matrix4x4.CreateFromYawPitchRoll(y, x, z));
     
     /// <summary>
+    /// Create rotation matrix from quaternion.
+    /// </summary>
+    public static GfMatrix4d CreateFromQuaternion(Quaternion quaternion) =>
+        new GfMatrix4d(Matrix4x4.CreateFromQuaternion(quaternion));
+    
+    /// <summary>
     /// Create scale matrix.
     /// </summary>
     public static GfMatrix4d CreateScale(GfVec3f scale) =>
