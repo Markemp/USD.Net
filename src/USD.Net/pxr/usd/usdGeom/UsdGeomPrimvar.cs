@@ -95,7 +95,7 @@ public class UsdGeomPrimvar
         if (!_attr.IsValid())
             return UsdGeomInterpolation.Vertex;
             
-        var interpolationValue = _attr.GetMetadata<string>("interpolation");
+        var interpolationValue = _attr.GetMetadata<string>(new TfToken("interpolation"));
         if (!string.IsNullOrEmpty(interpolationValue))
             return UsdGeomPrimvarConstants.StringToInterpolation(interpolationValue);
             
@@ -114,7 +114,7 @@ public class UsdGeomPrimvar
             return false;
             
         var interpolationStr = UsdGeomPrimvarConstants.InterpolationToString(interpolation);
-        return _attr.SetMetadata("interpolation", new VtValue(interpolationStr));
+        return _attr.SetMetadata(new TfToken("interpolation"), interpolationStr);
     }
     
     /// <summary>
@@ -125,7 +125,7 @@ public class UsdGeomPrimvar
         if (!_attr.IsValid())
             return false;
             
-        var interpolationValue = _attr.GetMetadata<string>("interpolation");
+        var interpolationValue = _attr.GetMetadata<string>(new TfToken("interpolation"));
         return !string.IsNullOrEmpty(interpolationValue);
     }
     
@@ -150,7 +150,7 @@ public class UsdGeomPrimvar
         if (!_attr.IsValid())
             return 1;
             
-        var elementSize = _attr.GetMetadata<int>("elementSize");
+        var elementSize = _attr.GetMetadata<int>(new TfToken("elementSize"));
         return elementSize > 0 ? elementSize : 1;
     }
     
@@ -162,7 +162,7 @@ public class UsdGeomPrimvar
         if (!_attr.IsValid() || elementSize <= 0)
             return false;
             
-        return _attr.SetMetadata("elementSize", new VtValue(elementSize));
+        return _attr.SetMetadata(new TfToken("elementSize"), elementSize);
     }
     
     /// <summary>
@@ -173,7 +173,7 @@ public class UsdGeomPrimvar
         if (!_attr.IsValid())
             return false;
             
-        var elementSize = _attr.GetMetadata<int>("elementSize");
+        var elementSize = _attr.GetMetadata<int>(new TfToken("elementSize"));
         return elementSize > 0;
     }
     
