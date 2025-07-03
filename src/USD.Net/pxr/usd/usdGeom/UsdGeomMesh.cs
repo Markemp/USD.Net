@@ -9,7 +9,7 @@ using Pxr.Usd.Sdf;
 namespace Pxr.Usd.UsdGeom;
 
 [UsdSchema("Mesh", UsdSchemaKind.ConcreteTyped)]
-public class UsdGeomMesh : UsdGeomGprim
+public class UsdGeomMesh : UsdGeomPointBased
 {
     #region Construction
     
@@ -33,45 +33,6 @@ public class UsdGeomMesh : UsdGeomGprim
     
     #region Core Mesh Attributes
     
-    /// <summary>
-    /// Get the points attribute. Defines the vertex positions of the mesh.
-    /// Inherited from UsdGeomPointBased.
-    /// </summary>
-    public UsdAttribute GetPointsAttr()
-    {
-        return GetAttribute(new TfToken("points"));
-    }
-    
-    /// <summary>
-    /// Create the points attribute.
-    /// </summary>
-    public UsdAttribute CreatePointsAttr()
-    {
-        return CreateAttribute(
-            new TfToken("points"), 
-            "point3f[]", 
-            false, 
-            SdfVariability.Varying);
-    }
-    
-    /// <summary>
-    /// Get or set the vertex positions.
-    /// </summary>
-    public List<GfVec3f> Points
-    {
-        get
-        {
-            var attr = GetPointsAttr();
-            if (attr.IsValid() && attr.Get(out List<GfVec3f> value))
-                return value;
-            return new List<GfVec3f>();
-        }
-        set
-        {
-            var attr = CreatePointsAttr();
-            attr.Set(new VtValue(value));
-        }
-    }
     
     /// <summary>
     /// Get the face vertex indices attribute. Flat list of vertex indices
@@ -374,31 +335,6 @@ public class UsdGeomMesh : UsdGeomGprim
     
     #region Extent Computation Override
     
-    protected override bool ComputeExtentFromGeometry(UsdTimeCode time, out List<GfVec3f> extent)
-    {
-        extent = new List<GfVec3f>();
-        
-        var points = Points;
-        if (points.Count == 0)
-            return false;
-            
-        var min = new GfVec3f(float.MaxValue, float.MaxValue, float.MaxValue);
-        var max = new GfVec3f(float.MinValue, float.MinValue, float.MinValue);
-        
-        foreach (var point in points)
-        {
-            if (point.X < min.X) min.X = point.X;
-            if (point.Y < min.Y) min.Y = point.Y;
-            if (point.Z < min.Z) min.Z = point.Z;
-            
-            if (point.X > max.X) max.X = point.X;
-            if (point.Y > max.Y) max.Y = point.Y;
-            if (point.Z > max.Z) max.Z = point.Z;
-        }
-        
-        extent = new List<GfVec3f> { min, max };
-        return true;
-    }
     
     #endregion
     

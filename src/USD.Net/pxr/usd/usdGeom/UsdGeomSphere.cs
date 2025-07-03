@@ -158,8 +158,15 @@ public class UsdGeomSphere : UsdGeomGprim
     public double GetRadius(UsdTimeCode time = default)
     {
         var attr = GetRadiusAttr();
-        if (attr.IsValid() && attr.Get(out double value, time))
-            return value;
+        if (attr.IsValid())
+        {
+            // Try to get value at specific time first
+            if (time != UsdTimeCode.Default() && attr.Get(out double timeValue, time))
+                return timeValue;
+            // Fall back to default value
+            if (attr.Get(out double value))
+                return value;
+        }
         return 1.0; // Default value
     }
     

@@ -272,3 +272,127 @@ public struct GfMatrix4d : IEquatable<GfMatrix4d>
     public static bool operator ==(GfMatrix4d left, GfMatrix4d right) => left.Equals(right);
     public static bool operator !=(GfMatrix4d left, GfMatrix4d right) => !left.Equals(right);
 }
+
+/// <summary>
+/// Constants and utilities for USD Primvars (primitive variables).
+/// </summary>
+public static class UsdGeomPrimvarConstants
+{
+    /// <summary>
+    /// The namespace prefix for all primvar attributes.
+    /// </summary>
+    public const string PrimvarNamespace = "primvars:";
+    
+    /// <summary>
+    /// The suffix used for indexed primvar indices.
+    /// </summary>
+    public const string IndicesSuffix = ":indices";
+    
+    /// <summary>
+    /// Reserved primvar keywords that cannot be used as base names.
+    /// </summary>
+    public static readonly string[] ReservedKeywords = { "indices" };
+    
+    /// <summary>
+    /// Convert interpolation enum to token string.
+    /// </summary>
+    public static string InterpolationToString(UsdGeomInterpolation interpolation)
+    {
+        return interpolation switch
+        {
+            UsdGeomInterpolation.Constant => "constant",
+            UsdGeomInterpolation.Uniform => "uniform", 
+            UsdGeomInterpolation.Varying => "varying",
+            UsdGeomInterpolation.Vertex => "vertex",
+            UsdGeomInterpolation.FaceVarying => "faceVarying",
+            _ => "vertex" // Default fallback
+        };
+    }
+    
+    /// <summary>
+    /// Convert token string to interpolation enum.
+    /// </summary>
+    public static UsdGeomInterpolation StringToInterpolation(string interpolation)
+    {
+        return interpolation switch
+        {
+            "constant" => UsdGeomInterpolation.Constant,
+            "uniform" => UsdGeomInterpolation.Uniform,
+            "varying" => UsdGeomInterpolation.Varying,
+            "vertex" => UsdGeomInterpolation.Vertex,
+            "faceVarying" => UsdGeomInterpolation.FaceVarying,
+            _ => UsdGeomInterpolation.Vertex // Default fallback
+        };
+    }
+    
+    /// <summary>
+    /// Check if a name is a valid primvar name.
+    /// </summary>
+    public static bool IsValidPrimvarName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return false;
+            
+        // Strip primvars: prefix if present
+        var baseName = name;
+        if (name.StartsWith(PrimvarNamespace))
+            baseName = name.Substring(PrimvarNamespace.Length);
+            
+        // Check for reserved keywords
+        var parts = baseName.Split(':');
+        var finalPart = parts[parts.Length - 1];
+        
+        foreach (var keyword in ReservedKeywords)
+        {
+            if (finalPart == keyword)
+                return false;
+        }
+        
+        return !string.IsNullOrEmpty(baseName);
+    }
+    
+    /// <summary>
+    /// Check if an interpolation value is valid.
+    /// </summary>
+    public static bool IsValidInterpolation(UsdGeomInterpolation interpolation)
+    {
+        return interpolation >= UsdGeomInterpolation.Constant && 
+               interpolation <= UsdGeomInterpolation.FaceVarying;
+    }
+    
+    /// <summary>
+    /// Get the full primvar attribute name from a base name.
+    /// </summary>
+    public static string MakePrimvarAttrName(string baseName)
+    {
+        if (string.IsNullOrEmpty(baseName))
+            return string.Empty;
+            
+        if (baseName.StartsWith(PrimvarNamespace))
+            return baseName;
+            
+        return PrimvarNamespace + baseName;
+    }
+    
+    /// <summary>
+    /// Get the base name from a full primvar attribute name.
+    /// </summary>
+    public static string GetPrimvarBaseName(string attrName)
+    {
+        if (string.IsNullOrEmpty(attrName))
+            return string.Empty;
+            
+        if (attrName.StartsWith(PrimvarNamespace))
+            return attrName.Substring(PrimvarNamespace.Length);
+            
+        return attrName;
+    }
+    
+    /// <summary>
+    /// Check if an attribute name represents a primvar.
+    /// </summary>
+    public static bool IsPrimvarName(string attrName)
+    {
+        return !string.IsNullOrEmpty(attrName) && attrName.StartsWith(PrimvarNamespace);
+    }
+}
