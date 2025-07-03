@@ -7,9 +7,9 @@ namespace Pxr.Usd.UsdShade;
 
 public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
 {
-    private readonly UsdAttribute _attr;
+    private readonly UsdAttribute? _attr;
 
-    internal UsdShadeInput(UsdAttribute attr)
+    internal UsdShadeInput(UsdAttribute? attr)
     {
         _attr = attr;
     }
@@ -34,27 +34,27 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         return new UsdShadeInput(attr);
     }
 
-    public bool IsValid() => _attr.IsValid();
+    public bool IsValid() => _attr?.IsValid() == true;
 
-    public UsdAttribute GetAttr() => _attr;
+    public UsdAttribute GetAttr() => _attr ?? new UsdAttribute();
 
     public TfToken GetBaseName()
     {
         if (!IsValid())
             return new TfToken();
 
-        var attrName = _attr.GetName();
+        var attrName = _attr?.GetName() ?? string.Empty;
         if (attrName.StartsWith("inputs:"))
             return new TfToken(attrName.Substring(7));
         
         return new TfToken();
     }
 
-    public string GetTypeName() => _attr.GetTypeName();
+    public string GetTypeName() => _attr?.GetTypeName() ?? string.Empty;
 
-    public UsdStage? GetStage() => _attr.GetStage();
+    public UsdStage? GetStage() => _attr?.GetStage();
 
-    public SdfPath GetPath() => _attr.GetPath();
+    public SdfPath GetPath() => _attr?.GetPath() ?? SdfPath.EmptyPath();
 
     public UsdPrim GetPrim()
     {
@@ -70,18 +70,19 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
 
     public T Get<T>(UsdTimeCode time = default)
     {
-        _attr.Get(out T value, time);
-        return value;
+        if (_attr?.Get(out T value, time) == true)
+            return value;
+        return default(T)!;
     }
 
     public bool Set<T>(T value, UsdTimeCode time = default)
     {
-        return _attr.Set(value, time);
+        return _attr?.Set(value, time) == true;
     }
 
     public bool ConnectToSource(SdfPath sourcePath)
     {
-        return _attr.AddConnection(sourcePath);
+        return _attr?.AddConnection(sourcePath) == true;
     }
 
     public bool ConnectToSource(UsdShadeInput sourceInput)
@@ -102,12 +103,12 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
 
     public bool ClearSources()
     {
-        return _attr.ClearConnections();
+        return _attr?.ClearConnections() == true;
     }
 
     public SdfPath[] GetConnectedSources()
     {
-        return _attr.GetConnections();
+        return _attr?.GetConnections() ?? Array.Empty<SdfPath>();
     }
 
     public bool HasConnectedSource()
@@ -120,7 +121,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         if (!IsValid())
             return false;
 
-        return _attr.SetMetadata(UsdShadeTokens.RenderType, renderType);
+        return _attr?.SetMetadata(UsdShadeTokens.RenderType, renderType) == true;
     }
 
     public TfToken GetRenderType()
@@ -128,7 +129,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         if (!IsValid())
             return new TfToken();
 
-        var renderType = _attr.GetMetadata<TfToken?>(UsdShadeTokens.RenderType);
+        var renderType = _attr?.GetMetadata<TfToken?>(UsdShadeTokens.RenderType);
         return renderType ?? TfToken.Empty;
     }
 
@@ -137,7 +138,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         if (!IsValid())
             return false;
 
-        return _attr.SetMetadata(UsdShadeTokens.SdrMetadata, sdrMetadata);
+        return _attr?.SetMetadata(UsdShadeTokens.SdrMetadata, sdrMetadata) == true;
     }
 
     public Dictionary<TfToken, object> GetSdrMetadata()
@@ -145,7 +146,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         if (!IsValid())
             return new Dictionary<TfToken, object>();
 
-        var sdrMetadata = _attr.GetMetadata<Dictionary<TfToken, object>>(UsdShadeTokens.SdrMetadata);
+        var sdrMetadata = _attr?.GetMetadata<Dictionary<TfToken, object>>(UsdShadeTokens.SdrMetadata);
         return sdrMetadata ?? new Dictionary<TfToken, object>();
     }
 
@@ -161,7 +162,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
             _ => "full"
         };
 
-        return _attr.SetMetadata(UsdShadeTokens.Connectability, new TfToken(connectabilityStr));
+        return _attr?.SetMetadata(UsdShadeTokens.Connectability, new TfToken(connectabilityStr)) == true;
     }
 
     public UsdShadeAttributeType GetConnectability()
@@ -169,7 +170,7 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         if (!IsValid())
             return UsdShadeAttributeType.Invalid;
 
-        var connectability = _attr.GetMetadata<TfToken?>(UsdShadeTokens.Connectability);
+        var connectability = _attr?.GetMetadata<TfToken?>(UsdShadeTokens.Connectability);
         if (connectability.HasValue)
         {
             return connectability.Value.GetText() switch
@@ -183,11 +184,11 @@ public readonly struct UsdShadeInput : IEquatable<UsdShadeInput>
         return UsdShadeAttributeType.Input; // Default connectability
     }
 
-    public bool Equals(UsdShadeInput other) => _attr.Equals(other._attr);
+    public bool Equals(UsdShadeInput other) => (_attr?.Equals(other._attr)) == true;
 
     public override bool Equals(object? obj) => obj is UsdShadeInput other && Equals(other);
 
-    public override int GetHashCode() => _attr.GetHashCode();
+    public override int GetHashCode() => _attr?.GetHashCode() ?? 0;
 
     public static bool operator ==(UsdShadeInput left, UsdShadeInput right) => left.Equals(right);
 

@@ -14,6 +14,7 @@ namespace Pxr.Usd;
 public class UsdAttribute : UsdProperty
 {
     private readonly Dictionary<UsdTimeCode, VtValue> _timeSamples = new();
+    private readonly List<SdfPath> _connections = new();
     private VtValue? _defaultValue;
     private string _typeName = string.Empty;
     private UsdVariability _variability = UsdVariability.Varying;
@@ -479,8 +480,24 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool AddConnection(SdfPath sourcePath, UsdListPosition position = UsdListPosition.BackOfPrependList)
     {
-        // TODO: Implement connection management
-        return false;
+        if (!IsValid() || sourcePath.IsEmpty())
+            return false;
+            
+        // Add connection if not already present
+        if (!_connections.Contains(sourcePath))
+        {
+            switch (position)
+            {
+                case UsdListPosition.FrontOfPrependList:
+                case UsdListPosition.FrontOfAppendList:
+                    _connections.Insert(0, sourcePath);
+                    break;
+                default:
+                    _connections.Add(sourcePath);
+                    break;
+            }
+        }
+        return true;
     }
 
     /// <summary>
@@ -488,8 +505,10 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool RemoveConnection(SdfPath sourcePath)
     {
-        // TODO: Implement connection management
-        return false;
+        if (!IsValid())
+            return false;
+            
+        return _connections.Remove(sourcePath);
     }
 
     /// <summary>
@@ -497,8 +516,7 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual SdfPath[] GetConnections()
     {
-        // TODO: Implement connection management
-        return Array.Empty<SdfPath>();
+        return _connections.ToArray();
     }
 
     /// <summary>
@@ -506,8 +524,7 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool HasConnections()
     {
-        // TODO: Implement connection management
-        return false;
+        return _connections.Count > 0;
     }
 
     /// <summary>
@@ -515,7 +532,10 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool ClearConnections()
     {
-        // TODO: Implement connection management
+        if (!IsValid())
+            return false;
+            
+        _connections.Clear();
         return true;
     }
 

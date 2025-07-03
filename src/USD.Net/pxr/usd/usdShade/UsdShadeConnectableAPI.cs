@@ -39,16 +39,23 @@ public readonly struct UsdShadeConnectableAPI : IEquatable<UsdShadeConnectableAP
 
     public UsdShadeInput CreateInput(TfToken name, string typeName)
     {
+        if (!IsValid())
+            return new UsdShadeInput();
         return UsdShadeInput.CreateInput(_prim, name, typeName);
     }
 
     public UsdShadeInput GetInput(TfToken name)
     {
+        if (!IsValid())
+            return new UsdShadeInput();
         return UsdShadeInput.GetInput(_prim, name);
     }
 
     public UsdShadeInput[] GetInputs(bool onlyAuthored = true)
     {
+        if (!IsValid())
+            return Array.Empty<UsdShadeInput>();
+            
         var inputs = new List<UsdShadeInput>();
         
         foreach (var attr in _prim.GetAttributes())
@@ -68,16 +75,23 @@ public readonly struct UsdShadeConnectableAPI : IEquatable<UsdShadeConnectableAP
 
     public UsdShadeOutput CreateOutput(TfToken name, string typeName)
     {
+        if (!IsValid())
+            return new UsdShadeOutput();
         return UsdShadeOutput.CreateOutput(_prim, name, typeName);
     }
 
     public UsdShadeOutput GetOutput(TfToken name)
     {
+        if (!IsValid())
+            return new UsdShadeOutput();
         return UsdShadeOutput.GetOutput(_prim, name);
     }
 
     public UsdShadeOutput[] GetOutputs(bool onlyAuthored = true)
     {
+        if (!IsValid())
+            return Array.Empty<UsdShadeOutput>();
+            
         var outputs = new List<UsdShadeOutput>();
         
         foreach (var attr in _prim.GetAttributes())
@@ -246,8 +260,8 @@ public readonly struct UsdShadeConnectableAPI : IEquatable<UsdShadeConnectableAP
         if (targetType == sourceType)
             return true;
 
-        // Float can connect to color/vector types
-        if (sourceType == "float" && (targetType.Contains("color") || targetType.Contains("vector")))
+        // Float can connect to vector types but not to color types
+        if (sourceType == "float" && targetType.Contains("vector"))
             return true;
 
         // Allow color3f -> vector3f and vice versa
