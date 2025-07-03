@@ -5,6 +5,7 @@ using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd;
 using Pxr.Usd.Sdf;
+using Pxr.Usd.UsdShade;
 
 namespace Pxr.Usd.UsdGeom;
 
@@ -333,8 +334,314 @@ public class UsdGeomMesh : UsdGeomPointBased
     
     #endregion
     
-    #region Extent Computation Override
+    #region Material Binding
     
+    // TODO: Implement material binding once UsdShadeMaterial and UsdShadeMaterialBindingAPI are available
+    // /// <summary>
+    // /// Bind a material to this mesh.
+    // /// </summary>
+    // public bool BindMaterial(UsdShadeMaterial material, TfToken? purpose = null)
+    // {
+    //     if (!IsValid || !material.IsValid)
+    //         return false;
+    //         
+    //     var materialBindingAPI = UsdShadeMaterialBindingAPI.Apply(Prim);
+    //     return materialBindingAPI.Bind(material, UsdShadeTokens.AllPurpose, purpose?.GetText());
+    // }
+    
+    #endregion
+    
+    #region UV Sets (Texture Coordinates)
+    
+    /// <summary>
+    /// Create or get a UV set (texture coordinates) primvar.
+    /// </summary>
+    public UsdGeomPrimvar CreateUVSet(string uvSetName = "st", UsdGeomInterpolation interpolation = UsdGeomInterpolation.FaceVarying)
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.CreatePrimvar(new TfToken(uvSetName), "texCoord2f", interpolation);
+        
+        // Set as texture coordinate
+        primvar.SetElementSize(1);
+        return primvar;
+    }
+    
+    /// <summary>
+    /// Get an existing UV set primvar.
+    /// </summary>
+    public UsdGeomPrimvar? GetUVSetPrimvar(string uvSetName = "st")
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.GetPrimvar(new TfToken(uvSetName));
+        return primvar.IsDefined() ? primvar : null;
+    }
+    
+    /// <summary>
+    /// Get an existing UV set primvar (alias for compatibility).
+    /// </summary>
+    public UsdGeomPrimvar? GetUVSet(string uvSetName = "st")
+    {
+        return GetUVSetPrimvar(uvSetName);
+    }
+    
+    /// <summary>
+    /// Set UV coordinates for a UV set.
+    /// </summary>
+    public bool SetUVCoordinates(List<GfVec2f> uvCoords, string uvSetName = "st", UsdTimeCode time = default)
+    {
+        var uvSet = GetUVSetPrimvar(uvSetName) ?? CreateUVSet(uvSetName);
+        return uvSet.Set(uvCoords, time);
+    }
+    
+    /// <summary>
+    /// Get UV coordinates from a UV set.
+    /// </summary>
+    public List<GfVec2f> GetUVCoordinates(string uvSetName = "st", UsdTimeCode time = default)
+    {
+        var uvSet = GetUVSetPrimvar(uvSetName);
+        if (uvSet?.Get(out List<GfVec2f> uvCoords, time) == true)
+            return uvCoords;
+        return new List<GfVec2f>();
+    }
+    
+    /// <summary>
+    /// Create multiple UV sets for game assets (diffuse, normal, specular, etc.).
+    /// </summary>
+    public void CreateGameUVSets(Dictionary<string, List<GfVec2f>> uvSets, UsdTimeCode time = default)
+    {
+        foreach (var kvp in uvSets)
+        {
+            SetUVCoordinates(kvp.Value, kvp.Key, time);
+        }
+    }
+    
+    /// <summary>
+    /// Get all UV set names on this mesh.
+    /// </summary>
+    public List<string> GetUVSetNames()
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvars = primvarsAPI.GetPrimvars();
+        
+        return primvars
+            .Where(pv => pv.GetTypeName().Contains("texCoord"))
+            .Select(pv => pv.GetPrimvarName().GetText())
+            .ToList();
+    }
+    
+    #endregion
+    
+    #region Vertex Colors
+    
+    /// <summary>
+    /// Create or get a vertex color primvar.
+    /// </summary>
+    public UsdGeomPrimvar CreateVertexColors(string colorSetName = "displayColor", UsdGeomInterpolation interpolation = UsdGeomInterpolation.Vertex)
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.CreatePrimvar(new TfToken(colorSetName), "color3f", interpolation);
+        
+        // Set as color data
+        primvar.SetElementSize(1);
+        return primvar;
+    }
+    
+    /// <summary>
+    /// Get an existing vertex color primvar.
+    /// </summary>
+    public UsdGeomPrimvar? GetVertexColorPrimvar(string colorSetName = "displayColor")
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.GetPrimvar(new TfToken(colorSetName));
+        return primvar.IsDefined() ? primvar : null;
+    }
+    
+    /// <summary>
+    /// Set vertex colors.
+    /// </summary>
+    public bool SetVertexColors(List<GfVec3f> colors, string colorSetName = "displayColor", UsdTimeCode time = default)
+    {
+        var colorSet = GetVertexColorPrimvar(colorSetName) ?? CreateVertexColors(colorSetName);
+        return colorSet.Set(colors, time);
+    }
+    
+    /// <summary>
+    /// Get vertex colors.
+    /// </summary>
+    public List<GfVec3f> GetVertexColors(string colorSetName = "displayColor", UsdTimeCode time = default)
+    {
+        var colorSet = GetVertexColorPrimvar(colorSetName);
+        if (colorSet?.Get(out List<GfVec3f> colors, time) == true)
+            return colors;
+        return new List<GfVec3f>();
+    }
+    
+    /// <summary>
+    /// Set vertex alpha values.
+    /// </summary>
+    public bool SetVertexAlpha(List<float> alphas, string alphaSetName = "displayOpacity", UsdTimeCode time = default)
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.CreatePrimvar(new TfToken(alphaSetName), "float", UsdGeomInterpolation.Vertex);
+        return primvar.Set(alphas, time);
+    }
+    
+    /// <summary>
+    /// Get vertex alpha values.
+    /// </summary>
+    public List<float> GetVertexAlpha(string alphaSetName = "displayOpacity", UsdTimeCode time = default)
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvar = primvarsAPI.GetPrimvar(new TfToken(alphaSetName));
+        if (primvar.IsDefined() && primvar.Get(out List<float> alphas, time))
+            return alphas;
+        return new List<float>();
+    }
+    
+    #endregion
+    
+    #region Enhanced Primvar Management
+    
+    /// <summary>
+    /// Create a custom primvar for game-specific data.
+    /// </summary>
+    public UsdGeomPrimvar CreateCustomPrimvar(string name, string typeName, UsdGeomInterpolation interpolation = UsdGeomInterpolation.Constant)
+    {
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        return primvarsAPI.CreatePrimvar(new TfToken(name), typeName, interpolation);
+    }
+    
+    /// <summary>
+    /// Set custom data on the mesh (useful for game engine metadata).
+    /// </summary>
+    public bool SetCustomData<T>(string name, T value, UsdTimeCode time = default)
+    {
+        try
+        {
+            var typeName = GetUsdTypeName<T>();
+            var primvar = CreateCustomPrimvar(name, typeName, UsdGeomInterpolation.Constant);
+            return primvar.Set(value, time);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Get custom data from the mesh.
+    /// </summary>
+    public T? GetCustomData<T>(string name, UsdTimeCode time = default)
+    {
+        try
+        {
+            var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+            var primvar = primvarsAPI.GetPrimvar(new TfToken(name));
+            if (primvar.IsDefined() && primvar.Get(out T value, time))
+                return value;
+        }
+        catch
+        {
+            // Type conversion failed
+        }
+        return default(T);
+    }
+    
+    private static string GetUsdTypeName<T>()
+    {
+        var type = typeof(T);
+        return type.Name.ToLower() switch
+        {
+            "int32" => "int",
+            "single" => "float",
+            "double" => "double",
+            "string" => "string",
+            "boolean" => "bool",
+            _ => "string" // Fallback
+        };
+    }
+    
+    /// <summary>
+    /// Get all custom primvars on this mesh.
+    /// </summary>
+    public Dictionary<string, UsdGeomPrimvar> GetAllCustomPrimvars()
+    {
+        var result = new Dictionary<string, UsdGeomPrimvar>();
+        var primvarsAPI = UsdGeomPrimvarsAPI.Get(Prim);
+        var primvars = primvarsAPI.GetPrimvars();
+        
+        foreach (var primvar in primvars)
+        {
+            var name = primvar.GetPrimvarName().GetText();
+            result[name] = primvar;
+        }
+        
+        return result;
+    }
+    
+    #endregion
+    
+    #region Game Asset Helpers
+    
+    /// <summary>
+    /// Configure this mesh for typical game asset workflows.
+    /// Sets up common primvars and material binding.
+    /// </summary>
+    public void ConfigureForGameAsset()
+    {
+        // Ensure we have a default UV set
+        CreateUVSet("st", UsdGeomInterpolation.FaceVarying);
+        
+        // Set subdivision scheme to none for game assets
+        SubdivisionScheme = "none";
+    }
+    
+    /// <summary>
+    /// Create a complete game asset mesh with all typical data.
+    /// </summary>
+    public void CreateGameAssetMesh(
+        List<GfVec3f> vertices,
+        List<int> indices,
+        List<int> faceCounts,
+        List<GfVec2f>? uvCoords = null,
+        List<GfVec3f>? normals = null,
+        List<GfVec3f>? colors = null,
+        Dictionary<string, List<GfVec2f>>? additionalUVSets = null,
+        UsdTimeCode time = default)
+    {
+        // Set basic mesh data
+        Points = vertices;
+        FaceVertexIndices = indices;
+        FaceVertexCounts = faceCounts;
+        
+        // Configure for game assets
+        ConfigureForGameAsset();
+        
+        // Set UV coordinates
+        if (uvCoords != null)
+        {
+            SetUVCoordinates(uvCoords, "st", time);
+        }
+        
+        // Set normals
+        if (normals != null)
+        {
+            var normalsPrimvar = CreateCustomPrimvar("normals", "normal3f", UsdGeomInterpolation.FaceVarying);
+            normalsPrimvar.Set(normals, time);
+        }
+        
+        // Set vertex colors
+        if (colors != null)
+        {
+            SetVertexColors(colors, "displayColor", time);
+        }
+        
+        // Set additional UV sets
+        if (additionalUVSets != null)
+        {
+            CreateGameUVSets(additionalUVSets, time);
+        }
+    }
     
     #endregion
     

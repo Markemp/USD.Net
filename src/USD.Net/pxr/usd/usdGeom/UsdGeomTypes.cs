@@ -135,6 +135,59 @@ public struct GfVec3f : IEquatable<GfVec3f>
 }
 
 /// <summary>
+/// Represents a 2D vector (UV coordinates, etc.).
+/// Compatible with USD's GfVec2f.
+/// </summary>
+public struct GfVec2f : IEquatable<GfVec2f>
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    
+    public GfVec2f(float x, float y)
+    {
+        X = x;
+        Y = y;
+    }
+    
+    public GfVec2f(Vector2 vector)
+    {
+        X = vector.X;
+        Y = vector.Y;
+    }
+    
+    /// <summary>
+    /// Convert to System.Numerics.Vector2.
+    /// </summary>
+    public Vector2 ToVector2() => new Vector2(X, Y);
+    
+    /// <summary>
+    /// Implicit conversion to Vector2.
+    /// </summary>
+    public static implicit operator Vector2(GfVec2f vec) => vec.ToVector2();
+    
+    /// <summary>
+    /// Implicit conversion from Vector2.
+    /// </summary>
+    public static implicit operator GfVec2f(Vector2 vec) => new GfVec2f(vec);
+    
+    public bool Equals(GfVec2f other) => X == other.X && Y == other.Y;
+    
+    public override bool Equals(object? obj) => obj is GfVec2f other && Equals(other);
+    
+    public override int GetHashCode() => HashCode.Combine(X, Y);
+    
+    public override string ToString() => $"({X}, {Y})";
+    
+    public static bool operator ==(GfVec2f left, GfVec2f right) => left.Equals(right);
+    public static bool operator !=(GfVec2f left, GfVec2f right) => !left.Equals(right);
+    
+    public static GfVec2f Zero => new GfVec2f(0, 0);
+    public static GfVec2f One => new GfVec2f(1, 1);
+    public static GfVec2f UnitX => new GfVec2f(1, 0);
+    public static GfVec2f UnitY => new GfVec2f(0, 1);
+}
+
+/// <summary>
 /// Represents a 3D color value.
 /// Compatible with USD's GfVec3f color representation.
 /// </summary>
@@ -394,5 +447,42 @@ public static class UsdGeomPrimvarConstants
     public static bool IsPrimvarName(string attrName)
     {
         return !string.IsNullOrEmpty(attrName) && attrName.StartsWith(PrimvarNamespace);
+    }
+}
+
+/// <summary>
+/// Common tokens used in UsdGeom.
+/// </summary>
+public static class UsdGeomTokens
+{
+    /// <summary>
+    /// Interpolation types for UsdGeom.
+    /// </summary>
+    public static class Interpolation
+    {
+        public const UsdGeomInterpolation Constant = UsdGeomInterpolation.Constant;
+        public const UsdGeomInterpolation Uniform = UsdGeomInterpolation.Uniform;
+        public const UsdGeomInterpolation Varying = UsdGeomInterpolation.Varying;
+        public const UsdGeomInterpolation Vertex = UsdGeomInterpolation.Vertex;
+        public const UsdGeomInterpolation FaceVarying = UsdGeomInterpolation.FaceVarying;
+    }
+    
+    /// <summary>
+    /// Common attribute names used in UsdGeom.
+    /// </summary>
+    public static class AttributeNames
+    {
+        public const string Points = "points";
+        public const string Normals = "normals";
+        public const string ST = "st";
+        public const string DisplayColor = "displayColor";
+        public const string DisplayOpacity = "displayOpacity";
+        public const string Velocities = "velocities";
+        public const string Accelerations = "accelerations";
+        public const string Widths = "widths";
+        public const string Ids = "ids";
+        public const string Orientations = "orientations";
+        public const string Scales = "scales";
+        public const string InvisibleIds = "invisibleIds";
     }
 }
