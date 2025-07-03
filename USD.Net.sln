@@ -28,6 +28,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{E1
 		examples\3DModelCreation.cs = examples\3DModelCreation.cs
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{C079660F-686E-4BBB-AC94-7C998F76AEA0}"
+	ProjectSection(SolutionItems) = preProject
+		docs\OpenUSD_USDA_Serialization_Analysis.md = docs\OpenUSD_USDA_Serialization_Analysis.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
