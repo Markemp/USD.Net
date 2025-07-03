@@ -3,6 +3,10 @@
 ## Project Overview
 USD.Net is a C# implementation of Pixar's Universal Scene Description (USD) format for .NET. The goal is to create a NuGet package that provides USD functionality for .NET applications.
 
+
+## The Golden Rule  
+When unsure about implementation details, ALWAYS ask the developer.  Provide a summary of how the issue is handled in the openusd project too, if applicable.
+
 ## Key Project Information
 
 ### Directory Structure
@@ -56,6 +60,22 @@ Implementation order based on dependencies:
   - Geometry classes implemented (UsdGeomImageable, UsdGeomXformable, UsdGeomBoundable, UsdGeomGprim, UsdGeomMesh, UsdGeomSphere, UsdGeomCube)
 
 ### Development Workflow
+
+#### Anchor comments  
+
+Add specially formatted comments throughout the codebase, where appropriate, for yourself as inline knowledge that can be easily `grep`ped for.  
+
+##### Guidelines:  
+
+- Use `AIDEV-NOTE:`, `AIDEV-TODO:`, or `AIDEV-QUESTION:` (all-caps prefix) for comments aimed at AI and developers.  
+- Keep them concise (≤ 120 chars).  
+- **Important:** Before scanning files, always first try to **locate existing anchors** `AIDEV-*` in relevant subdirectories.  
+- **Update relevant anchors** when modifying associated code.  
+- **Do not remove `AIDEV-NOTE`s** without explicit human instruction.  
+
+Example:  
+# AIDEV-NOTE: perf-hot-path; avoid extra allocations (see ADR-24)  
+async def render_feed(...):  
 
 #### When Implementing New Classes
 1. **Reference C++ Implementation**: Check `../OpenUSD` for the original C++ class

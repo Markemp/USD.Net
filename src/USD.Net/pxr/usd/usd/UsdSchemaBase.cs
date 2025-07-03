@@ -1,4 +1,3 @@
-using System;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
@@ -114,10 +113,8 @@ public abstract class UsdSchemaBase
         }
         
         // Set fallback value if provided
-        if (fallbackValue != null)
-        {
+        if (fallbackValue is not null)
             attr.Set(fallbackValue);
-        }
         
         return attr;
     }
@@ -141,20 +138,14 @@ public abstract class UsdSchemaBase
     /// </summary>
     /// <param name="name">The attribute name</param>
     /// <returns>The attribute, or invalid if not found</returns>
-    protected UsdAttribute GetAttribute(TfToken name)
-    {
-        return _prim.GetAttribute(name.GetText());
-    }
+    protected UsdAttribute GetAttribute(TfToken name) => _prim.GetAttribute(name.GetText());
     
     /// <summary>
     /// Get a relationship from the held prim by name.
     /// </summary>
     /// <param name="name">The relationship name</param>
     /// <returns>The relationship, or invalid if not found</returns>
-    protected UsdRelationship GetRelationship(TfToken name)
-    {
-        return _prim.GetRelationship(name.GetText());
-    }
+    protected UsdRelationship GetRelationship(TfToken name) => _prim.GetRelationship(name.GetText());
     
     #endregion
     
@@ -165,20 +156,14 @@ public abstract class UsdSchemaBase
     /// </summary>
     /// <param name="schema">The schema to check</param>
     /// <returns>True if the schema is valid</returns>
-    public static implicit operator bool(UsdSchemaBase? schema)
-    {
-        return schema?.IsValid == true;
-    }
+    public static implicit operator bool(UsdSchemaBase? schema) => schema?.IsValid == true;
     
     /// <summary>
     /// Explicit conversion to UsdPrim.
     /// </summary>
     /// <param name="schema">The schema to convert</param>
     /// <returns>The held prim</returns>
-    public static explicit operator UsdPrim(UsdSchemaBase schema)
-    {
-        return schema._prim;
-    }
+    public static explicit operator UsdPrim(UsdSchemaBase schema) => schema._prim;
     
     #endregion
     
@@ -192,10 +177,7 @@ public abstract class UsdSchemaBase
         return false;
     }
     
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(_prim.GetPath(), GetType());
-    }
+    public override int GetHashCode() => HashCode.Combine(_prim.GetPath(), GetType());
     
     public override string ToString()
     {

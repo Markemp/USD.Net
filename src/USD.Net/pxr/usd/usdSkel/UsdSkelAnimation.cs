@@ -578,7 +578,7 @@ public class UsdSkelAnimation : UsdTyped
         }
         
         // Set transforms for first and last frame to create a loop
-        SetTransforms(translations, rotations, scales, UsdTimeCode.Default());
+        SetTransforms(translations, rotations, scales, UsdTimeCode.Create(0.0));
         SetTransforms(translations, rotations, scales, UsdTimeCode.Create(duration * frameRate));
     }
     

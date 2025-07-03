@@ -1,4 +1,3 @@
-using System;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -30,41 +29,29 @@ public abstract class UsdObject
     /// <summary>
     /// Return true if this object is valid.
     /// </summary>
-    public virtual bool IsValid()
-    {
-        return _stage != null && !_path.IsEmpty();
-    }
+    public virtual bool IsValid() => _stage is not null && !_path.IsEmpty();
 
     /// <summary>
     /// Return the stage that owns this object.
     /// </summary>
-    public virtual UsdStage? GetStage()
-    {
-        return _stage;
-    }
+    public virtual UsdStage? GetStage() => _stage;
 
     /// <summary>
     /// Return the path to this object.
     /// </summary>
-    public virtual SdfPath GetPath()
-    {
-        return _path;
-    }
+    public virtual SdfPath GetPath() => _path;
 
     /// <summary>
     /// Return the name of this object.
     /// </summary>
-    public virtual string GetName()
-    {
-        return _path.GetName();
-    }
+    public virtual string GetName() => _path.GetName();
 
     /// <summary>
     /// Return true if this object has the same stage and path as another object.
     /// </summary>
     public virtual bool IsSameAs(UsdObject other)
     {
-        if (other == null)
+        if (other is null)
             return false;
             
         return ReferenceEquals(_stage, other._stage) && _path.Equals(other._path);
@@ -73,18 +60,10 @@ public abstract class UsdObject
     /// <summary>
     /// Return the string representation of this object's path.
     /// </summary>
-    public override string ToString()
-    {
-        return _path.GetString();
-    }
+    public override string ToString() => _path.GetString();
 
-    public override bool Equals(object? obj)
-    {
-        return obj is UsdObject other && IsSameAs(other);
-    }
+    public override bool Equals(object? obj) => obj is UsdObject other && IsSameAs(other);
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(_stage?.GetHashCode() ?? 0, _path.GetHashCode());
-    }
+    public override int GetHashCode() 
+        => HashCode.Combine(_stage?.GetHashCode() ?? 0, _path.GetHashCode());
 }
