@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    doc = "USD file with properties and metadata"
+)
+
+def "root"
+{
+    string description = "A root prim with properties"
+    int count = 42
+    float3 position = (1.0, 2.0, 3.0)
+    
+    def "child"
+    {
+        bool active = true
+        string name = "child_prim"
+    }
+}

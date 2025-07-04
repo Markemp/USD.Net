@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    doc = "Simple USD file with a single prim"
+)
+
+def "root"
+{
+    string description = "A simple root prim"
+}

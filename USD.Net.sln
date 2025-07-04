@@ -16,6 +16,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USD.Net.Tests", "tests\USD.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USD.Net.IntegrationTests", "tests\USD.Net.IntegrationTests\USD.Net.IntegrationTests.csproj", "{C3FE74E1-B743-11D0-AE1A-00A0C90FFFC5}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USD.Net.BaselineTests", "tests\USD.Net.BaselineTests\USD.Net.BaselineTests.csproj", "{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
@@ -32,7 +34,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{E1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{C079660F-686E-4BBB-AC94-7C998F76AEA0}"
 	ProjectSection(SolutionItems) = preProject
+		docs\OpenUSD_Testing_Methodology.md = docs\OpenUSD_Testing_Methodology.md
 		docs\OpenUSD_USDA_Serialization_Analysis.md = docs\OpenUSD_USDA_Serialization_Analysis.md
+		docs\USD_Net_Testing_Strategy.md = docs\USD_Net_Testing_Strategy.md
 	EndProjectSection
 EndProject
 Global
@@ -53,6 +57,10 @@ Global
 		{C3FE74E1-B743-11D0-AE1A-00A0C90FFFC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3FE74E1-B743-11D0-AE1A-00A0C90FFFC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3FE74E1-B743-11D0-AE1A-00A0C90FFFC5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,6 +69,7 @@ Global
 		{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3} = {8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}
 		{B3FE74E1-B743-11D0-AE1A-00A0C90FFFC4} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
 		{C3FE74E1-B743-11D0-AE1A-00A0C90FFFC5} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
+		{D3FE74E1-B743-11D0-AE1A-00A0C90FFFC6} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {36E2F624-F4F1-4F40-8B9F-5A4F7A4F7556}
