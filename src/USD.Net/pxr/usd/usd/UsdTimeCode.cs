@@ -38,6 +38,7 @@ public readonly struct UsdTimeCode : IEquatable<UsdTimeCode>, IComparable<UsdTim
     /// </summary>
     public static double SafeStep() => 1e-6;
 
+
     /// <summary>
     /// Return true if this is the default time code.
     /// </summary>
@@ -47,6 +48,7 @@ public readonly struct UsdTimeCode : IEquatable<UsdTimeCode>, IComparable<UsdTim
     /// Return true if this represents a numeric time value.
     /// </summary>
     public bool IsNumeric() => !_isDefault && !double.IsInfinity(_value);
+
 
     /// <summary>
     /// Return true if this is the earliest time.

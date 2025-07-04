@@ -108,18 +108,22 @@ public class UsdAttribute : UsdProperty
     #region Value Operations
 
     /// <summary>
+    /// Get the value of this attribute at the default time.
+    /// </summary>
+    public virtual bool Get<T>(out T value)
+    {
+        return Get(out value, UsdTimeCode.Default());
+    }
+
+    /// <summary>
     /// Get the value of this attribute at the given time.
     /// </summary>
-    public virtual bool Get<T>(out T value, UsdTimeCode time = default)
+    public virtual bool Get<T>(out T value, UsdTimeCode time)
     {
         value = default!;
 
         if (_isBlocked)
             return false;
-
-        // If no time specified, use default time
-        if (time.Equals(default(UsdTimeCode)))
-            time = UsdTimeCode.Default();
 
         // For uniform attributes or default time, return default value
         if (_variability == UsdVariability.Uniform || time.IsDefault())
@@ -139,43 +143,40 @@ public class UsdAttribute : UsdProperty
             return false;
         }
 
-        // For time-varying attributes, interpolate between samples
-        if (_timeSamples.Count == 0)
-            return false;
-
-        // Find closest time samples for interpolation
-        var timeValue = time.GetValue();
-        var closestSample = _timeSamples.Keys
-            .Where(t => !t.IsDefault())
-            .OrderBy(t => Math.Abs(t.GetValue() - timeValue))
-            .FirstOrDefault();
-
-        if (closestSample.IsDefault())
-            return false;
-
-        try
+        // For time-varying attributes, use proper interpolation
+        if (GetInterpolatedValue(time, out var vtValue))
         {
-            value = _timeSamples[closestSample].Get<T>();
-            return true;
+            try
+            {
+                value = vtValue.Get<T>();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
-        catch
-        {
-            return false;
-        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Get the value of this attribute as VtValue at the default time.
+    /// </summary>
+    public virtual bool Get(out VtValue value)
+    {
+        return Get(out value, UsdTimeCode.Default());
     }
 
     /// <summary>
     /// Get the value of this attribute as VtValue at the given time.
     /// </summary>
-    public virtual bool Get(out VtValue value, UsdTimeCode time = default)
+    public virtual bool Get(out VtValue value, UsdTimeCode time)
     {
         value = VtValue.CreateEmpty();
 
         if (_isBlocked)
             return false;
-
-        if (time.Equals(default(UsdTimeCode)))
-            time = UsdTimeCode.Default();
 
         // For uniform attributes or default time, return default value
         if (_variability == UsdVariability.Uniform || time.IsDefault())
@@ -217,6 +218,7 @@ public class UsdAttribute : UsdProperty
             return false;
         }
 
+
         var lowerTime = UsdTimeCode.Create(lower);
         var upperTime = UsdTimeCode.Create(upper);
 
@@ -225,6 +227,7 @@ public class UsdAttribute : UsdProperty
             lowerValue = VtValue.CreateEmpty();
         if (!_timeSamples.TryGetValue(upperTime, out var upperValue))
             upperValue = VtValue.CreateEmpty();
+
 
         // If we have exact time match
         if (Math.Abs(lower - time.GetValue()) < UsdTimeCode.SafeStep())
@@ -256,23 +259,34 @@ public class UsdAttribute : UsdProperty
     }
 
     /// <summary>
+    /// Set the value of this attribute at the default time.
+    /// </summary>
+    public virtual bool Set<T>(T value)
+    {
+        return Set(new VtValue(value), UsdTimeCode.Default());
+    }
+
+    /// <summary>
     /// Set the value of this attribute at the given time.
     /// </summary>
-    public virtual bool Set<T>(T value, UsdTimeCode time = default)
+    public virtual bool Set<T>(T value, UsdTimeCode time)
     {
-        if (time.Equals(default(UsdTimeCode)))
-            time = UsdTimeCode.Default();
         return Set(new VtValue(value), time);
+    }
+
+    /// <summary>
+    /// Set the value of this attribute as VtValue at the default time.
+    /// </summary>
+    public virtual bool Set(VtValue value)
+    {
+        return Set(value, UsdTimeCode.Default());
     }
 
     /// <summary>
     /// Set the value of this attribute as VtValue at the given time.
     /// </summary>
-    public virtual bool Set(VtValue value, UsdTimeCode time = default)
+    public virtual bool Set(VtValue value, UsdTimeCode time)
     {
-        if (time.Equals(default(UsdTimeCode)))
-            time = UsdTimeCode.Default();
-            
         if (time.IsDefault())
         {
             // Setting default value
@@ -322,6 +336,7 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual double[] GetTimeSamples()
     {
+        
         return _timeSamples.Keys
             .Where(t => !t.IsDefault())
             .Select(t => t.GetValue())
@@ -371,6 +386,7 @@ public class UsdAttribute : UsdProperty
         // Find bracketing samples
         var lowerSamples = samples.Where(t => t <= time).ToArray();
         var upperSamples = samples.Where(t => t >= time).ToArray();
+
 
         if (lowerSamples.Length > 0)
             lower = lowerSamples.Max();

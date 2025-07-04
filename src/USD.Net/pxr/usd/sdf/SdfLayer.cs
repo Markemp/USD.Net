@@ -97,6 +97,13 @@ public class SdfLayer
                 }
                 
                 content.AppendLine(")");
+                content.AppendLine();
+            }
+            
+            // Write root prim specs
+            foreach (var primSpec in GetRootPrimSpecs().OrderBy(p => p.GetName()))
+            {
+                WritePrimSpec(content, primSpec, 0);
             }
             
             // Write to file
@@ -125,6 +132,86 @@ public class SdfLayer
         }
         else
             return value.ToString() ?? "None";
+    }
+
+    /// <summary>
+    /// Write a prim spec to the content buffer with proper indentation.
+    /// </summary>
+    private void WritePrimSpec(System.Text.StringBuilder content, SdfPrimSpec primSpec, int indentLevel)
+    {
+        var indent = new string(' ', indentLevel * 4);
+        var typeName = primSpec.GetTypeName();
+        var primName = primSpec.GetName();
+        var specifier = primSpec.GetSpecifier();
+
+        // Write prim definition
+        if (string.IsNullOrEmpty(typeName))
+            content.AppendLine($"{indent}{specifier} \"{primName}\"");
+        else
+            content.AppendLine($"{indent}{specifier} {typeName} \"{primName}\"");
+
+        content.AppendLine($"{indent}{{");
+
+        // Write properties (attributes)
+        foreach (var property in primSpec.GetProperties().OrderBy(p => p.GetName()))
+        {
+            WritePropertySpec(content, property, indentLevel + 1);
+        }
+
+        // Write child prims
+        foreach (var child in primSpec.GetChildren().OrderBy(c => c.GetName()))
+        {
+            WritePrimSpec(content, child, indentLevel + 1);
+        }
+
+        content.AppendLine($"{indent}}}");
+        content.AppendLine(); // Empty line between prims
+    }
+
+    /// <summary>
+    /// Write a property spec to the content buffer.
+    /// </summary>
+    private void WritePropertySpec(System.Text.StringBuilder content, SdfPropertySpec propertySpec, int indentLevel)
+    {
+        var indent = new string(' ', indentLevel * 4);
+        var propName = propertySpec.GetName();
+        var typeName = propertySpec.GetTypeName();
+        var defaultValue = propertySpec.GetDefaultValue();
+        var variability = propertySpec.GetVariability();
+
+        if (defaultValue != null && !defaultValue.IsEmpty())
+        {
+            var valueStr = FormatPropertyValue(defaultValue);
+            
+            if (variability == UsdVariability.Uniform)
+                content.AppendLine($"{indent}uniform {typeName} {propName} = {valueStr}");
+            else
+                content.AppendLine($"{indent}{typeName} {propName} = {valueStr}");
+        }
+        else
+        {
+            // Property without default value
+            content.AppendLine($"{indent}{typeName} {propName}");
+        }
+    }
+
+    /// <summary>
+    /// Format a property value for USDA output.
+    /// </summary>
+    private string FormatPropertyValue(VtValue value)
+    {
+        if (value.IsHolding<string>())
+            return $"\"{value.Get<string>()}\"";
+        else if (value.IsHolding<bool>())
+            return value.Get<bool>() ? "true" : "false";
+        else if (value.IsHolding<int>())
+            return value.Get<int>().ToString();
+        else if (value.IsHolding<float>())
+            return value.Get<float>().ToString("G");
+        else if (value.IsHolding<double>())
+            return value.Get<double>().ToString("G");
+        else
+            return value.ToString();
     }
 
     /// <summary>

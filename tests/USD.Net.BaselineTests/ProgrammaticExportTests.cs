@@ -72,7 +72,7 @@ public class ProgrammaticExportTests
     }
     
     [Fact]
-    public void SdfLayer_CannotRoundTrip_BecauseNoParser()
+    public void SdfLayer_CanRoundTrip_WithParser()
     {
         using var env = new TestEnvironment();
         
@@ -101,9 +101,10 @@ def ""TestPrim""
         // Read the exported content
         var exportedContent = File.ReadAllText(outputPath);
         
-        // The exported content will be empty because FindOrOpen doesn't parse
+        // The parser should now successfully load and export the content
         Assert.Contains("#usda 1.0", exportedContent);
-        Assert.DoesNotContain("TestPrim", exportedContent); // Prim was not loaded
-        Assert.DoesNotContain("doc =", exportedContent); // Metadata was not loaded
+        Assert.Contains("TestPrim", exportedContent); // Prim should be loaded
+        Assert.Contains("doc =", exportedContent); // Metadata should be loaded
+        Assert.Contains("string name = \"test\"", exportedContent); // Attribute should be loaded
     }
 }

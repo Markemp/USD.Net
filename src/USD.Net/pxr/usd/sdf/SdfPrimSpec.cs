@@ -169,7 +169,7 @@ public class SdfPrimSpec
             throw new ArgumentException("Property name cannot be null or empty", nameof(name));
 
         var propertyPath = _path.AppendProperty(name);
-        var propertySpec = new SdfPropertySpec();
+        var propertySpec = new SdfPropertySpec(_layer, propertyPath, name, typeName);
         _properties[name] = propertySpec;
         return propertySpec;
     }

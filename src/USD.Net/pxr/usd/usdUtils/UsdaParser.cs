@@ -270,9 +270,8 @@ public class UsdaParser
         var attrName = match.Groups[3].Value;
         var valueStr = match.Groups[4].Value.Trim();
 
-        // Create attribute spec
-        var attrPath = primSpec.GetPath().AppendProperty(attrName);
-        var attrSpec = SdfPropertySpec.New(layer, attrPath, attrName, typeName);
+        // Create and add attribute spec to the prim
+        var attrSpec = primSpec.CreateProperty(attrName, typeName);
 
         // Parse and set the value
         var value = ParseValue(valueStr);
