@@ -10,7 +10,7 @@ using Pxr.Usd.UsdGeom;
 
 namespace Pxr.Usd.UsdSkel;
 
-[UsdSchema("Skeleton", UsdSchemaKind.ConcreteTyped)]
+[UsdSchema("Skeleton", UsdSchemaKind.ConcreteTyped, TypeName = "Skeleton")]
 public class UsdSkelSkeleton : UsdGeomBoundable
 {
     #region Construction

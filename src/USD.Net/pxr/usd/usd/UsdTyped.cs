@@ -52,8 +52,8 @@ public abstract class UsdTyped : UsdSchemaBase
         var expectedType = GetTypeName();
         var primType = _prim.GetTypeName();
         
-        // Check exact type match or inheritance
-        return primType == expectedType.GetText() || IsA(expectedType);
+        // Check exact type match 
+        return primType == expectedType.GetText();
     }
     
     /// <summary>

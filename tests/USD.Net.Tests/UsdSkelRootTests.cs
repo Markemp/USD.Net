@@ -23,6 +23,12 @@ public class UsdSkelRootTests
         Assert.True(skelRoot.IsValid);
         Assert.Equal(rootPath, skelRoot.Prim.GetPath());
         Assert.Equal("SkelRoot", skelRoot.Prim.GetTypeName());
+        
+        // Debug schema registration
+        var registry = UsdSchemaRegistry.Instance;
+        var schemaInfo = registry.FindSchemaInfo(typeof(UsdSkelRoot));
+        Assert.NotNull(schemaInfo);
+        Assert.Equal("SkelRoot", schemaInfo.TypeName.GetText());
     }
     
     [Fact]

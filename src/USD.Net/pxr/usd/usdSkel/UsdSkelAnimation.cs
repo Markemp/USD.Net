@@ -53,7 +53,7 @@ public struct GfQuatf : IEquatable<GfQuatf>
     public static bool operator !=(GfQuatf left, GfQuatf right) => !left.Equals(right);
 }
 
-[UsdSchema("SkelAnimation", UsdSchemaKind.ConcreteTyped)]
+[UsdSchema("SkelAnimation", UsdSchemaKind.ConcreteTyped, TypeName = "SkelAnimation")]
 public class UsdSkelAnimation : UsdTyped
 {
     #region Construction
@@ -191,7 +191,9 @@ public class UsdSkelAnimation : UsdTyped
     /// </summary>
     public bool SetTranslations(List<GfVec3f> translations, UsdTimeCode time = default)
     {
-        var attr = CreateTranslationsAttr();
+        var attr = GetTranslationsAttr();
+        if (!attr.IsValid())
+            attr = CreateTranslationsAttr();
         return attr.Set(new VtValue(translations), time);
     }
     
@@ -211,7 +213,9 @@ public class UsdSkelAnimation : UsdTyped
     /// </summary>
     public bool SetRotations(List<GfQuatf> rotations, UsdTimeCode time = default)
     {
-        var attr = CreateRotationsAttr();
+        var attr = GetRotationsAttr();
+        if (!attr.IsValid())
+            attr = CreateRotationsAttr();
         return attr.Set(new VtValue(rotations), time);
     }
     
@@ -231,7 +235,9 @@ public class UsdSkelAnimation : UsdTyped
     /// </summary>
     public bool SetScales(List<GfVec3f> scales, UsdTimeCode time = default)
     {
-        var attr = CreateScalesAttr();
+        var attr = GetScalesAttr();
+        if (!attr.IsValid())
+            attr = CreateScalesAttr();
         return attr.Set(new VtValue(scales), time);
     }
     

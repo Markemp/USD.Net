@@ -8,7 +8,7 @@ using Pxr.Usd.UsdGeom;
 
 namespace Pxr.Usd.UsdSkel;
 
-[UsdSchema("SkelRoot", UsdSchemaKind.ConcreteTyped)]
+[UsdSchema("SkelRoot", UsdSchemaKind.ConcreteTyped, TypeName = "SkelRoot")]
 public class UsdSkelRoot : UsdGeomBoundable
 {
     #region Construction
