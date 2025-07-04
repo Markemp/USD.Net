@@ -1,6 +1,8 @@
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
+using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
+using System.Linq;
 using System.Text;
 
 namespace Pxr.Usd.UsdUtils;
@@ -44,6 +46,34 @@ public class UsdaWriter
     }
 
     /// <summary>
+    /// Get layer metadata for writing to header.
+    /// </summary>
+    private IReadOnlyDictionary<string, object>? GetLayerMetadata(SdfLayer layer)
+    {
+        return layer.GetAllMetadata();
+    }
+
+    /// <summary>
+    /// Format a metadata value for USDA output.
+    /// </summary>
+    private string FormatMetadataValue(object value)
+    {
+        if (value is string s)
+            return $"\"{s}\"";
+        else if (value is bool b)
+            return b ? "true" : "false";
+        else if (value is VtValue vt)
+        {
+            if (vt.IsHolding<string>())
+                return $"\"{vt.Get<string>()}\"";
+            else
+                return vt.ToString();
+        }
+        else
+            return value.ToString() ?? "None";
+    }
+
+    /// <summary>
     /// Write USDA file header with version and optional layer metadata.
     /// </summary>
     private void WriteHeader(UsdStage stage)
@@ -54,27 +84,36 @@ public class UsdaWriter
         var rootLayer = stage.GetRootLayer();
         var hasMetadata = false;
 
-        // Check for common layer metadata
-        var defaultPrim = stage.GetDefaultPrim();
-        if (defaultPrim?.IsValid() ?? false)
-        {
-            if (!hasMetadata)
-            {
-                WriteLine("(");
-                _indentLevel++;
-                hasMetadata = true;
-            }
-            WriteLine($"defaultPrim = \"{defaultPrim.GetName()}\"");
-        }
-
-        // Add upAxis if we can determine it (assume Z for now)
-        if (!hasMetadata)
+        // Write layer metadata if it exists
+        // First, check if we can access layer metadata
+        var layerMetadata = GetLayerMetadata(rootLayer);
+        if (layerMetadata?.Count > 0)
         {
             WriteLine("(");
             _indentLevel++;
             hasMetadata = true;
+
+            foreach (var kvp in layerMetadata.OrderBy(m => m.Key))
+            {
+                WriteLine($"{kvp.Key} = {FormatMetadataValue(kvp.Value)}");
+            }
         }
-        WriteLine("upAxis = \"Z\"");
+
+        // Check for common stage metadata only if no layer metadata
+        if (!hasMetadata)
+        {
+            var defaultPrim = stage.GetDefaultPrim();
+            if (defaultPrim?.IsValid() ?? false)
+            {
+                if (!hasMetadata)
+                {
+                    WriteLine("(");
+                    _indentLevel++;
+                    hasMetadata = true;
+                }
+                WriteLine($"defaultPrim = \"{defaultPrim.GetName()}\"");
+            }
+        }
 
         if (hasMetadata)
         {
@@ -96,9 +135,9 @@ public class UsdaWriter
         var typeName = prim.GetTypeName();
         var primName = prim.GetName();
 
-        // Write prim definition
+        // Write prim definition - preserve original type (or lack thereof)
         if (string.IsNullOrWhiteSpace(typeName))
-            WriteLine($"def Xform \"{primName}\"");
+            WriteLine($"def \"{primName}\"");
         else
             WriteLine($"def {typeName} \"{primName}\"");
 
@@ -126,8 +165,8 @@ public class UsdaWriter
     {
         var attributes = prim.GetAttributes();
 
-        // Sort attributes for consistent output
-        var sortedAttrs = attributes.OrderBy(attr => attr.GetName()).ToList();
+        // Use attributes in their natural order (preserves authoring order if possible)
+        var sortedAttrs = attributes.ToList();
 
         foreach (var attr in sortedAttrs)
         {
@@ -266,10 +305,10 @@ public class UsdaWriter
         {
             return $"\"{value.Get<TfToken>().GetText()}\"";
         }
-        else if (value.IsHolding<GfVec3f>())
+        else if (value.IsHolding<UsdGeom.GfVec3f>())
         {
-            var vec = value.Get<GfVec3f>();
-            return $"({vec.X:G}, {vec.Y:G}, {vec.Z:G})";
+            var vec = value.Get<UsdGeom.GfVec3f>();
+            return $"({vec.X:0.0}, {vec.Y:0.0}, {vec.Z:0.0})";
         }
         else if (value.IsHolding<GfVec3Color>())
         {

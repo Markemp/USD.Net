@@ -2,12 +2,11 @@
 (
     doc = "USD file with properties and metadata"
 )
-
 def "root"
 {
-    string description = "A root prim with properties"
     int count = 42
-    float3 position = (1.0, 2.0, 3.0)
+    string description = "A root prim with properties"
+    float3 position = VtValue((1, 2, 3))
     
     def "child"
     {

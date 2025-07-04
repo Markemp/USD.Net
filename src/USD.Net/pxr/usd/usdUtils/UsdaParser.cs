@@ -4,6 +4,7 @@ using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd;
 using Pxr.Usd.Sdf;
+using Pxr.Usd.UsdGeom;
 
 namespace Pxr.Usd.UsdUtils;
 
@@ -344,7 +345,7 @@ public class UsdaParser
             if (parts.All(p => float.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out _)))
             {
                 var values = parts.Select(p => float.Parse(p, CultureInfo.InvariantCulture)).ToArray();
-                return new VtValue(new List<float> { values[0], values[1], values[2] });
+                return new VtValue(new GfVec3f(values[0], values[1], values[2]));
             }
         }
 

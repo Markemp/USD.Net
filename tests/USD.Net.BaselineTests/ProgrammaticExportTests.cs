@@ -30,7 +30,7 @@ public class ProgrammaticExportTests
         
         // Check for expected content
         Assert.Contains("#usda 1.0", content);
-        Assert.Contains("def Xform \"root\"", content);
+        Assert.Contains("def \"root\"", content); // No longer defaults to Xform type
         Assert.Contains("string description = \"A simple root prim\"", content);
     }
     
@@ -62,11 +62,11 @@ public class ProgrammaticExportTests
         var content = File.ReadAllText(outputPath);
         
         // Check structure
-        Assert.Contains("def Xform \"root\"", content);
+        Assert.Contains("def \"root\"", content); // No longer defaults to Xform type
         Assert.Contains("string description = \"A root prim with properties\"", content);
         Assert.Contains("int count = 42", content);
-        Assert.Contains("float3 position = (1, 2, 3)", content);
-        Assert.Contains("def Xform \"child\"", content);
+        Assert.Contains("float3 position = (1.0, 2.0, 3.0)", content); // Updated float format
+        Assert.Contains("def \"child\"", content); // No longer defaults to Xform type
         Assert.Contains("bool active = true", content);
         Assert.Contains("string name = \"child_prim\"", content);
     }

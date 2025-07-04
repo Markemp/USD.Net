@@ -32,8 +32,7 @@ public class WriterValidationTests
         
         // Basic format checks
         Assert.Contains("#usda 1.0", content);
-        Assert.Contains("upAxis = \"Z\"", content);
-        Assert.Contains("def Xform \"hello\"", content);
+        Assert.Contains("def \"hello\"", content); // No longer defaults to Xform type
         Assert.Contains("string myString = \"world\"", content);
     }
     
@@ -55,9 +54,8 @@ public class WriterValidationTests
         Console.WriteLine(content);
         Console.WriteLine("========================");
         
-        // Should have header
+        // Should have header (no default metadata added for empty stages)
         Assert.Contains("#usda 1.0", content);
-        Assert.Contains("upAxis = \"Z\"", content);
     }
     
     [Fact]
@@ -87,11 +85,11 @@ public class WriterValidationTests
         Console.WriteLine(content);
         Console.WriteLine("================================");
         
-        // Check structure
-        Assert.Contains("def Xform \"root\"", content);
-        Assert.Contains("def Xform \"child1\"", content);
-        Assert.Contains("def Xform \"child2\"", content);
-        Assert.Contains("def Xform \"grandchild\"", content);
+        // Check structure (no longer defaults to Xform type)
+        Assert.Contains("def \"root\"", content);
+        Assert.Contains("def \"child1\"", content);
+        Assert.Contains("def \"child2\"", content);
+        Assert.Contains("def \"grandchild\"", content);
         
         // Check attributes
         Assert.Contains("string rootAttr = \"rootValue\"", content);
@@ -181,7 +179,7 @@ public class WriterValidationTests
         Assert.Contains("double doubleAttr = 89.01", content);
         Assert.Contains("string stringAttr = \"hello world\"", content);
         Assert.Contains("token tokenAttr = \"myToken\"", content);
-        Assert.Contains("float3 vec3fAttr = (1, 2, 3)", content);
+        Assert.Contains("float3 vec3fAttr = (1.0, 2.0, 3.0)", content);
         Assert.Contains("color3f colorAttr = (0.5, 0.5, 0.5)", content);
         Assert.Contains("int[] intArrayAttr = [1, 2, 3, 4, 5]", content);
         Assert.Contains("float[] floatArrayAttr = [1.1, 2.2, 3.3]", content);
@@ -243,8 +241,8 @@ public class WriterValidationTests
         Assert.Contains("#usda 1.0", layerContent);
         Assert.Contains("#usda 1.0", stageContent);
         
-        // Stage export includes upAxis, layer export includes metadata
+        // Both exports should be consistent and not add default metadata
         Assert.DoesNotContain("upAxis", layerContent);
-        Assert.Contains("upAxis", stageContent);
+        Assert.DoesNotContain("upAxis", stageContent);
     }
 }

@@ -272,6 +272,11 @@ public class SdfLayer
     public bool HasMetadata(TfToken key) => _metadata.ContainsKey(key.GetText());
 
     /// <summary>
+    /// Get all metadata from this layer.
+    /// </summary>
+    public IReadOnlyDictionary<string, object> GetAllMetadata() => _metadata;
+
+    /// <summary>
     /// Clear metadata with the given key.
     /// </summary>
     public void ClearMetadata(TfToken key)
