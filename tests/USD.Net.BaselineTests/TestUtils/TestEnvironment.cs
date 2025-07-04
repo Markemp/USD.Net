@@ -44,9 +44,7 @@ public class TestEnvironment : IDisposable
     public void SetEnvironmentVariable(string name, string? value)
     {
         if (!_originalEnvVars.ContainsKey(name))
-        {
             _originalEnvVars[name] = Environment.GetEnvironmentVariable(name);
-        }
         
         Environment.SetEnvironmentVariable(name, value);
     }
@@ -119,9 +117,7 @@ public class TestEnvironment : IDisposable
     {
         var path = Path.Combine(_tempDir, filename);
         if (File.Exists(path))
-        {
             File.Delete(path);
-        }
     }
     
     public void DeleteDirectory(string dirname)
@@ -158,9 +154,7 @@ public class TestEnvironment : IDisposable
                 try
                 {
                     if (File.Exists(file))
-                    {
                         File.Delete(file);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -220,9 +214,7 @@ public class TestEnvironment : IDisposable
             RestoreEnvironmentVariables();
             
             if (Directory.Exists(_tempDir))
-            {
                 Directory.Delete(_tempDir, recursive: true);
-            }
         }
         catch (Exception ex)
         {
