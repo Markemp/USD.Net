@@ -239,6 +239,17 @@ public class SdfPrimSpec
     }
 
     /// <summary>
+    /// Add an existing child prim spec to this prim.
+    /// </summary>
+    public void AddChild(SdfPrimSpec childSpec)
+    {
+        if (childSpec?.IsValid() == true && !_children.Contains(childSpec))
+        {
+            _children.Add(childSpec);
+        }
+    }
+
+    /// <summary>
     /// Get a child prim spec by name.
     /// </summary>
     public SdfPrimSpec? GetChildByName(string name)
@@ -386,6 +397,14 @@ public class SdfPrimSpec
     {
         var path = new SdfPath("/" + name);
         return new SdfPrimSpec(layer, path, specifier);
+    }
+
+    /// <summary>
+    /// Create a new prim spec with layer, path, and name.
+    /// </summary>
+    public static SdfPrimSpec New(SdfLayer layer, SdfPath path, string name)
+    {
+        return new SdfPrimSpec(layer, path, "def");
     }
 
     #endregion

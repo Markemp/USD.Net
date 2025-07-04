@@ -157,14 +157,15 @@ public class UsdaWriter
             return;
         }
 
-        // Get default value
+        // Get default value and time samples
         var hasDefaultValue = attr.Get(out VtValue defaultValue);
-        var hasTimeSamples = attr.GetNumTimeSamples() > 0;
+        var timeSampleTimes = attr.GetTimeSamples();
+        var hasExplicitTimeSamples = timeSampleTimes.Length > 0;
 
-        if (!hasDefaultValue && !hasTimeSamples)
+        if (!hasDefaultValue && !hasExplicitTimeSamples)
             return;
 
-        // Write attribute with type and default value
+        // Write attribute declaration with type and default value
         if (hasDefaultValue)
         {
             var valueStr = FormatValue(defaultValue, typeName);
@@ -177,9 +178,15 @@ public class UsdaWriter
             else
                 WriteLine($"{typeStr} {attrName} = {valueStr}");
         }
+        // If no default value but has time samples, declare the attribute with type only
+        else if (hasExplicitTimeSamples)
+        {
+            var typeStr = GetUsdTypeName(typeName);
+            WriteLine($"{typeStr} {attrName}");
+        }
 
-        // Write time samples if they exist
-        if (hasTimeSamples)
+        // Write time samples if there are explicit time samples
+        if (hasExplicitTimeSamples)
             WriteTimeSamples(attr);
     }
 

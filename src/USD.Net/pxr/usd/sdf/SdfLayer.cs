@@ -11,6 +11,7 @@ namespace Pxr.Usd.Sdf;
 public class SdfLayer
 {
     private readonly Dictionary<string, object> _metadata = new();
+    private readonly Dictionary<SdfPath, SdfPrimSpec> _primSpecs = new();
     private readonly string _identifier;
     private bool _isDirty = false;
     private static readonly ConcurrentDictionary<string, SdfLayer> _layerRegistry = new();
@@ -211,9 +212,27 @@ public class SdfLayer
             
         try
         {
-            // TODO: Implement actual file loading when file format support is added
-            // For now, create a new layer for any identifier
-            return new SdfLayer(identifier);
+            // Try to load from file if it exists
+            if (File.Exists(identifier))
+            {
+                var layer = new SdfLayer(identifier);
+                
+                // Parse USDA files
+                if (identifier.EndsWith(".usda", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parser = new UsdUtils.UsdaParser();
+                    if (parser.ParseFile(identifier, layer))
+                    {
+                        _layerRegistry[identifier] = layer;
+                        return layer;
+                    }
+                }
+            }
+            
+            // Fallback: create a new empty layer
+            var newLayer = new SdfLayer(identifier);
+            _layerRegistry[identifier] = newLayer;
+            return newLayer;
         }
         catch
         {
@@ -232,4 +251,65 @@ public class SdfLayer
         
         return new SdfLayer(identifier);
     }
+
+    #region Prim Spec Management
+
+    /// <summary>
+    /// Add a prim spec to this layer.
+    /// </summary>
+    public void AddPrimSpec(SdfPrimSpec primSpec)
+    {
+        if (primSpec?.IsValid() == true)
+        {
+            _primSpecs[primSpec.GetPath()] = primSpec;
+            _isDirty = true;
+        }
+    }
+
+    /// <summary>
+    /// Get a prim spec by path.
+    /// </summary>
+    public SdfPrimSpec? GetPrimSpec(SdfPath path)
+    {
+        return _primSpecs.TryGetValue(path, out var primSpec) ? primSpec : null;
+    }
+
+    /// <summary>
+    /// Get all prim specs in this layer.
+    /// </summary>
+    public IEnumerable<SdfPrimSpec> GetAllPrimSpecs()
+    {
+        return _primSpecs.Values;
+    }
+
+    /// <summary>
+    /// Get all root prim specs (prims at the root level).
+    /// </summary>
+    public IEnumerable<SdfPrimSpec> GetRootPrimSpecs()
+    {
+        return _primSpecs.Values.Where(spec => spec.GetPath().GetParentPath().IsAbsoluteRootPath());
+    }
+
+    /// <summary>
+    /// Return true if this layer has a prim spec at the given path.
+    /// </summary>
+    public bool HasPrimSpec(SdfPath path)
+    {
+        return _primSpecs.ContainsKey(path);
+    }
+
+    /// <summary>
+    /// Remove a prim spec from this layer.
+    /// </summary>
+    public bool RemovePrimSpec(SdfPath path)
+    {
+        if (_primSpecs.Remove(path))
+        {
+            _isDirty = true;
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
 }

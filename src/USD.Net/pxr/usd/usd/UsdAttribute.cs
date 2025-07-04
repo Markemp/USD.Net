@@ -118,7 +118,7 @@ public class UsdAttribute : UsdProperty
             return false;
 
         // If no time specified, use default time
-        if (time.IsDefault())
+        if (time.Equals(default(UsdTimeCode)))
             time = UsdTimeCode.Default();
 
         // For uniform attributes or default time, return default value
@@ -174,7 +174,7 @@ public class UsdAttribute : UsdProperty
         if (_isBlocked)
             return false;
 
-        if (time.IsDefault())
+        if (time.Equals(default(UsdTimeCode)))
             time = UsdTimeCode.Default();
 
         // For uniform attributes or default time, return default value
@@ -260,6 +260,8 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool Set<T>(T value, UsdTimeCode time = default)
     {
+        if (time.Equals(default(UsdTimeCode)))
+            time = UsdTimeCode.Default();
         return Set(new VtValue(value), time);
     }
 
@@ -268,6 +270,9 @@ public class UsdAttribute : UsdProperty
     /// </summary>
     public virtual bool Set(VtValue value, UsdTimeCode time = default)
     {
+        if (time.Equals(default(UsdTimeCode)))
+            time = UsdTimeCode.Default();
+            
         if (time.IsDefault())
         {
             // Setting default value

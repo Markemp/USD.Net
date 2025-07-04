@@ -184,6 +184,19 @@ public sealed class UsdStage
         if (_primIndex.TryGetValue(path, out var existingPrim))
             return existingPrim;
 
+        // Check if a prim spec exists in the root layer
+        var primSpec = _rootLayer.GetPrimSpec(path);
+        if (primSpec != null)
+        {
+            // Create UsdPrim from prim spec
+            var newPrim = new UsdPrim(this, path);
+            if (!string.IsNullOrEmpty(primSpec.GetTypeName()))
+                newPrim.SetTypeName(primSpec.GetTypeName());
+            
+            _primIndex[path] = newPrim;
+            return newPrim;
+        }
+
         // Return invalid prim if not found
         return new UsdPrim();
     }
@@ -203,6 +216,10 @@ public sealed class UsdStage
         // Create pseudo-root if it doesn't exist
         var pseudoRoot = new UsdPrim(this, pseudoRootPath);
         _primIndex[pseudoRootPath] = pseudoRoot;
+        
+        // Populate stage with prims from root layer
+        PopulatePrimsFromLayer();
+        
         return pseudoRoot;
     }
 
@@ -343,6 +360,54 @@ public sealed class UsdStage
     public UsdPrimRange TraverseAllRange()
     {
         return new SimpleUsdPrimRange(TraverseAll().Where(UsdPrimPredicates.All));
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    /// <summary>
+    /// Populate the stage's prim index with prims from the root layer.
+    /// </summary>
+    private void PopulatePrimsFromLayer()
+    {
+        foreach (var primSpec in _rootLayer.GetAllPrimSpecs())
+        {
+            var path = primSpec.GetPath();
+            if (!_primIndex.ContainsKey(path))
+            {
+                var usdPrim = new UsdPrim(this, path);
+                if (!string.IsNullOrEmpty(primSpec.GetTypeName()))
+                    usdPrim.SetTypeName(primSpec.GetTypeName());
+                
+                // Populate attributes from prim spec
+                PopulateAttributesFromPrimSpec(usdPrim, primSpec);
+                
+                _primIndex[path] = usdPrim;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Populate UsdPrim attributes from SdfPrimSpec properties.
+    /// </summary>
+    private void PopulateAttributesFromPrimSpec(UsdPrim usdPrim, SdfPrimSpec primSpec)
+    {
+        foreach (var property in primSpec.GetProperties())
+        {
+            // Create attribute on the prim
+            var attribute = usdPrim.CreateAttribute(property.GetName(), property.GetTypeName());
+            
+            // Set default value if available
+            var defaultValue = property.GetDefaultValue();
+            if (defaultValue != null)
+            {
+                attribute.Set(defaultValue);
+            }
+            
+            // Set variability
+            attribute.SetVariability(property.GetVariability());
+        }
     }
 
     #endregion
