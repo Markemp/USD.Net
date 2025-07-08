@@ -16,7 +16,8 @@
       "Bash(dotnet build:*)",
       "Bash(ls:*)",
       "Bash(git add:*)",
-      "Bash(dotnet new:*)"
+      "Bash(dotnet new:*)",
+      "Bash(csc:*)"
     ],
     "deny": []
   }
