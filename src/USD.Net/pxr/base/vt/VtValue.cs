@@ -9,11 +9,12 @@ namespace Pxr.Base.Vt;
 public sealed class VtValue : IEquatable<VtValue>
 {
     // Static empty instance for efficiency
-    public static readonly VtValue Empty = new VtValue();
+    public static readonly VtValue Empty = new();
+
 
     // Cast registry for custom type conversions
     private static readonly Dictionary<(Type from, Type to), Delegate> _castRegistry = new();
-    private static readonly object _castRegistryLock = new object();
+    private static readonly object _castRegistryLock = new();
 
     private readonly object? _value;
     private readonly Type _type;
@@ -33,7 +34,7 @@ public sealed class VtValue : IEquatable<VtValue>
 
     public VtValue(object? value)
     {
-        if (value == null)
+        if (value is null)
         {
             _value = null;
             _type = typeof(void);
@@ -62,6 +63,8 @@ public sealed class VtValue : IEquatable<VtValue>
     /// </summary>
     public bool IsEmpty() => _isEmpty;
 
+    public object? GetValue() => _value;
+
     /// <summary>
     /// Returns true if the value is not empty.
     /// </summary>
@@ -73,9 +76,7 @@ public sealed class VtValue : IEquatable<VtValue>
     public T Get<T>()
     {
         if (_isEmpty)
-        {
             throw new InvalidOperationException($"Cannot get value of type '{typeof(T).Name}' from empty VtValue");
-        }
 
         // Try direct cast first
         if (_value is T directCast)
@@ -83,7 +84,7 @@ public sealed class VtValue : IEquatable<VtValue>
 
         // Try registered cast
         var castResult = TryCast(typeof(T));
-        if (castResult != null)
+        if (castResult is not null)
             return (T)castResult;
 
         // Fall back to Convert.ChangeType
@@ -92,10 +93,10 @@ public sealed class VtValue : IEquatable<VtValue>
 
         try
         {
-            if (underlyingType != null)
+            if (underlyingType is not null)
             {
-                if (_value == null)
-                    return default!;
+                if (_value is null) return default!;
+
                 var convertedValue = Convert.ChangeType(_value, underlyingType);
                 return (T)Activator.CreateInstance(targetType, convertedValue)!;
             }
@@ -212,18 +213,12 @@ public sealed class VtValue : IEquatable<VtValue>
     /// <summary>
     /// Return true if this value is holding an array type (e.g., VtArray or .NET array).
     /// </summary>
-    public bool IsArrayValued()
-    {
-        return !_isEmpty && _value is Array;
-    }
+    public bool IsArrayValued() => !_isEmpty && _value is Array;
 
     /// <summary>
     /// Return the number of elements in the array, or 0 if not an array.
     /// </summary>
-    public int GetArraySize()
-    {
-        return _value is Array array ? array.Length : 0;
-    }
+    public int GetArraySize() => _value is Array array ? array.Length : 0;
 
     /// <summary>
     /// Returns the C# Type object for the held type (alias for GetType).

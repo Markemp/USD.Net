@@ -70,7 +70,7 @@ public class UsdaParserEnhancedTests
             
             // Check layer metadata
             var layerMetadata = layer.GetMetadata();
-            Assert.True(layerMetadata.Count > 0, "Layer should have metadata");
+            Assert.True(layerMetadata.GetArraySize() > 0, "Layer should have metadata");
             
             // Check if we have prim specs
             var primSpecs = layer.GetPrimSpecs();
