@@ -266,6 +266,23 @@ public class SdfLayer
             : VtValue.CreateEmpty();
     }
 
+    public SdfData GetMetadata()
+    {
+        var result = new SdfData();
+        var absRoot = SdfPath.AbsoluteRootPath();
+
+        result.CreateSpec(absRoot, SdfSpecType.SdfSpecTypePseudoRoot);
+
+        var fieldNames = ListFields(absRoot);
+        foreach (var fieldName in fieldNames)
+        {
+            var value = GetField(absRoot, fieldName);
+            result.Set(absRoot, fieldName, value);
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Return true if this layer has metadata with the given key.
     /// </summary>
