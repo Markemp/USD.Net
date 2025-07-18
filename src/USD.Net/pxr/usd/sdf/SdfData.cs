@@ -39,12 +39,12 @@ public class SdfData : SdfAbstractData
         if (_data.TryGetValue(path, out var specData))
             return specData.SpecType;
         
-        return SdfSpecType.SdfSpecTypeUnknown;
+        return SdfSpecType.Unknown;
     }
 
     public override void CreateSpec(SdfPath path, SdfSpecType specType)
     {
-        if (specType == SdfSpecType.SdfSpecTypeUnknown)
+        if (specType == SdfSpecType.Unknown)
             return;
         
         _data[path] = new SpecData { SpecType = specType };
@@ -58,6 +58,8 @@ public class SdfData : SdfAbstractData
                 break;
         }
     }
+
+    public bool Has(SdfPath path, TfToken field) => _GetFieldValue(path, field) is not null;
 
     public override bool Has(SdfPath path, TfToken field, SdfAbstractDataValue? value = null)
     {
@@ -89,7 +91,7 @@ public class SdfData : SdfAbstractData
     {
         var fieldValue = _GetSpecTypeAndFieldValue(path, fieldName, out specType);
         if (fieldValue is not null)
-            return value == null || value.StoreValue(fieldValue);
+            return value is null || value.StoreValue(fieldValue);
 
         return false;
     }
@@ -115,7 +117,7 @@ public class SdfData : SdfAbstractData
             return spec.Fields.TryGetValue(field, out var fieldValue) ? fieldValue : null;
         }
         
-        specType = SdfSpecType.SdfSpecTypeUnknown;
+        specType = SdfSpecType.Unknown;
         return null;
     }
 
@@ -393,9 +395,40 @@ public class SdfData : SdfAbstractData
     private bool _GetBracketingTimeSamples(SdfTimeSampleMap samples, double time, out double tLower, out double tUpper)
         => _GetBracketingTimeSamples(samples.Keys, time, out tLower, out tUpper);
 
+    /// <summary>
+    /// Static helper method for listing fields (used by SdfLayer)
+    /// This matches the C++ SdfLayer::_ListFields implementation
+    /// </summary>
+    public static List<TfToken> ListFields(ISdfSchemaBase schema, SdfData data, SdfPath path)
+    {
+        // Get the list from the data implementation
+        var dataList = data.List(path);
+
+        // Determine spec type. If unknown, return early.
+        var specType = data.GetSpecType(path);
+        if (specType == SdfSpecType.Unknown)
+            return dataList;
+
+        // Get required fields from schema
+        var requiredFields = schema.GetRequiredFields(specType);
+
+        // Union them together, but retain order of dataList since it influences
+        // the output ordering in some file writers.
+        var result = new List<TfToken>(dataList);
+
+        foreach (var requiredField in requiredFields)
+        {
+            // If the required field name is not already present, append it
+            if (!dataList.Contains(requiredField))
+                result.Add(requiredField);
+        }
+
+        return result;
+    }
+
     private class SpecData
     {
-        public SdfSpecType SpecType { get; set; } = SdfSpecType.SdfSpecTypeUnknown;
+        public SdfSpecType SpecType { get; set; } = SdfSpecType.Unknown;
         public Dictionary<TfToken, VtValue> Fields { get; } = new();
     }
 }

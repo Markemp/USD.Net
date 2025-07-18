@@ -4,19 +4,19 @@ namespace Pxr.Usd.Sdf;
 
 public enum SdfSpecType
 {
-    SdfSpecTypeUnknown = 0,
-    SdfSpecTypeAttribute,
-    SdfSpecTypeConnection,
-    SdfSpecTypeExpression,
-    SdfSpecTypeMapper,
-    SdfSpecTypeMapperArg,
-    SdfSpecTypePrim,
-    SdfSpecTypePseudoRoot,
-    SdfSpecTypeRelationship,
-    SdfSpecTypeRelationshipTarget,
-    SdfSpecTypeVariant,
-    SdfSpecTypeVariantSet,
-    SdfNumSpecTypes
+    Unknown = 0,
+    Attribute,
+    Connection,
+    Expression,
+    Mapper,
+    MapperArg,
+    Prim,
+    PseudoRoot,
+    Relationship,
+    RelationshipTarget,
+    Variant,
+    VariantSet,
+    Types
 }
 
 public enum SdfSpecifier
@@ -43,10 +43,8 @@ public enum SdfVariability
 
 public static class SdfSpecifierHelpers
 {
-    public static bool SdfIsDefiningSpecifier(SdfSpecifier spec)
-    {
-        return spec != SdfSpecifier.SdfSpecifierOver;
-    }
+    public static bool SdfIsDefiningSpecifier(SdfSpecifier spec) 
+        => spec != SdfSpecifier.SdfSpecifierOver;
 }
 
 public static class SdfDataTokens

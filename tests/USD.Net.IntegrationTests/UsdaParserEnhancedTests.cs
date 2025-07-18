@@ -73,8 +73,8 @@ public class UsdaParserEnhancedTests
             Assert.True(layerMetadata.GetArraySize() > 0, "Layer should have metadata");
             
             // Check if we have prim specs
-            var primSpecs = layer.GetPrimSpecs();
-            Assert.True(primSpecs.Count >= 2, "Should have at least 2 prim specs (World and _class_World)");
+            var primSpecs = layer.GetAllPrimSpecs();
+            Assert.True(primSpecs.Count() >= 2, "Should have at least 2 prim specs (World and _class_World)");
             
             // Find the World prim
             var worldPrim = primSpecs.FirstOrDefault(p => p.GetName() == "World");
@@ -82,15 +82,15 @@ public class UsdaParserEnhancedTests
             
             // Check that World prim has composition metadata
             var worldMetadata = worldPrim.GetMetadata();
-            Assert.True(worldMetadata.Count > 0, "World prim should have metadata");
+            Assert.True(worldMetadata.Count() > 0, "World prim should have metadata");
             
             // Check properties
             var properties = worldPrim.GetProperties();
-            Assert.True(properties.Count > 0, "World prim should have properties");
+            Assert.True(properties.Count() > 0, "World prim should have properties");
             
             // Check child prims
             var children = worldPrim.GetChildren();
-            Assert.True(children.Count > 0, "World prim should have child prims");
+            Assert.True(children.Count() > 0, "World prim should have child prims");
             
             var cubePrim = children.FirstOrDefault(c => c.GetName() == "Cube");
             Assert.NotNull(cubePrim);

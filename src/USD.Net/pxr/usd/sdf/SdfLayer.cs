@@ -8,6 +8,39 @@ namespace Pxr.Usd.Sdf;
 /// SdfLayer represents a scene description container that can combine with other layers to form compositions.
 /// It stores scene description data and participates in USD's layered composition system.
 /// </summary>
+/// <remarks>
+/// A scene description container that can combine with other such containers
+/// to form simple component assets, and successively larger aggregates.  The
+/// contents of an SdfLayer adhere to the SdfData data model.  A layer can be
+/// ephemeral, or be an asset accessed and serialized through the ArAsset and
+/// ArResolver interfaces.
+///
+/// The SdfLayer class provides a consistent API for accesing and serializing
+/// scene description, using any data store provided by Ar plugins.  Sdf
+/// itself provides a UTF-8 text format for layers identified by the ".sdf"
+/// identifier extension, but via the SdfFileFormat abstraction, allows
+/// downstream modules and plugins to adapt arbitrary data formats to the
+/// SdfData/SdfLayer model.
+///
+/// The FindOrOpen() method returns a new SdfLayer object with scene
+/// description from any supported asset format. Once read, a layer
+/// remembers which asset it was read from. The Save() method saves the layer
+/// back out to the original asset.  You can use the Export() method to write
+/// the layer to a different location. You can use the GetIdentifier() method
+/// to get the layer's Id or GetRealPath() to get the resolved, full URI.
+///
+/// Layer identifiers are UTF-8 encoded strings. A layer's file format is
+/// determined via the identifier's extension (as resolved by Ar) with [A-Z]
+/// (and no other characters) explicitly case folded.
+///
+/// Layers can have a timeCode range (startTimeCode and endTimeCode). This range
+/// represents the suggested playback range, but has no impact on the extent of 
+/// the animation data that may be stored in the layer. The metadatum 
+/// "timeCodesPerSecond" is used to annotate how the time ordinate for samples
+/// contained in the file scales to seconds. For example, if timeCodesPerSecond
+/// is 24, then a sample at time ordinate 24 should be viewed exactly one second
+/// after the sample at time ordinate 0.
+/// </remarks>
 public class SdfLayer
 {
     private readonly Dictionary<string, object> _metadata = new();
@@ -15,10 +48,15 @@ public class SdfLayer
     private readonly string _identifier;
     private bool _isDirty = false;
     private static readonly ConcurrentDictionary<string, SdfLayer> _layerRegistry = new();
+    private readonly ISdfSchemaBase _schema;
+    private SdfData _data;
 
-    public SdfLayer(string identifier)
+    public SdfLayer(string identifier, ISdfSchemaBase? schema = null)
     {
         _identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+        _schema = schema ?? new SdfSchema(); // You'll need a default schema
+        _data = new SdfData(); // Initialize the data container
+
         _layerRegistry[identifier] = this;
     }
 
@@ -252,8 +290,7 @@ public class SdfLayer
     /// </summary>
     public void SetMetadata(TfToken key, VtValue value)
     {
-        _metadata[key.GetText()] = value.GetValue() ?? throw new ArgumentNullException(nameof(value));
-        _isDirty = true;
+        SetField(SdfPath.AbsoluteRootPath(), key, value);
     }
 
     /// <summary>
@@ -261,9 +298,7 @@ public class SdfLayer
     /// </summary>
     public VtValue GetMetadata(TfToken key)
     {
-        return _metadata.TryGetValue(key.GetText(), out var value) 
-            ? new VtValue(value) 
-            : VtValue.CreateEmpty();
+        return GetField(SdfPath.AbsoluteRootPath(), key);
     }
 
     public SdfData GetMetadata()
@@ -271,7 +306,7 @@ public class SdfLayer
         var result = new SdfData();
         var absRoot = SdfPath.AbsoluteRootPath();
 
-        result.CreateSpec(absRoot, SdfSpecType.SdfSpecTypePseudoRoot);
+        result.CreateSpec(absRoot, SdfSpecType.PseudoRoot);
 
         var fieldNames = ListFields(absRoot);
         foreach (var fieldName in fieldNames)
@@ -286,8 +321,8 @@ public class SdfLayer
     /// <summary>
     /// Return true if this layer has metadata with the given key.
     /// </summary>
-    public bool HasMetadata(TfToken key) => _metadata.ContainsKey(key.GetText());
-
+    public bool HasMetadata(TfToken key) => HasField(SdfPath.AbsoluteRootPath(), key);
+    
     /// <summary>
     /// Get all metadata from this layer.
     /// </summary>
@@ -301,6 +336,47 @@ public class SdfLayer
         if (_metadata.Remove(key.GetText()))
             _isDirty = true;
     }
+
+    /// <summary>
+    /// Get the schema for this layer
+    /// </summary>
+    public ISdfSchemaBase GetSchema() => _schema;
+
+    /// <summary>
+    /// Check if this layer has a spec at the given path
+    /// </summary>
+    public bool HasSpec(SdfPath path) => _data.HasSpec(path);
+
+    /// <summary>
+    /// Get the spec type at the given path
+    /// </summary>
+    public SdfSpecType GetSpecType(SdfPath path) => _data.GetSpecType(path);
+
+    /// <summary>
+    /// Get a field value at the given path
+    /// </summary>
+    public VtValue GetField(SdfPath path, TfToken fieldName) => _data.Get(path, fieldName);
+
+    /// <summary>
+    /// Check if a field exists at the given path
+    /// </summary>
+    public bool HasField(SdfPath path, TfToken fieldName) => _data.Has(path, fieldName);
+
+    /// <summary>
+    /// Set a field value at the given path
+    /// </summary>
+    public void SetField(SdfPath path, TfToken fieldName, VtValue value)
+    {
+        if (!PermissionToEdit()) return;
+
+        _data.Set(path, fieldName, value);
+        _isDirty = true;
+    }
+
+    /// <summary>
+    /// Check if we have permission to edit this layer
+    /// </summary>
+    public bool PermissionToEdit() => true; // Simplified for now
 
     /// <summary>
     /// Create a new layer in memory.
@@ -379,33 +455,23 @@ public class SdfLayer
     /// Get a prim spec by path.
     /// </summary>
     public SdfPrimSpec? GetPrimSpec(SdfPath path)
-    {
-        return _primSpecs.TryGetValue(path, out var primSpec) ? primSpec : null;
-    }
+        => _primSpecs.TryGetValue(path, out var primSpec) ? primSpec : null;
 
     /// <summary>
     /// Get all prim specs in this layer.
     /// </summary>
-    public IEnumerable<SdfPrimSpec> GetAllPrimSpecs()
-    {
-        return _primSpecs.Values;
-    }
+    public IEnumerable<SdfPrimSpec> GetAllPrimSpecs() => _primSpecs.Values;
 
     /// <summary>
     /// Get all root prim specs (prims at the root level).
     /// </summary>
     public IEnumerable<SdfPrimSpec> GetRootPrimSpecs()
-    {
-        return _primSpecs.Values.Where(spec => spec.GetPath().GetParentPath().IsAbsoluteRootPath());
-    }
+        =>_primSpecs.Values.Where(spec => spec.GetPath().GetParentPath().IsAbsoluteRootPath());
 
     /// <summary>
     /// Return true if this layer has a prim spec at the given path.
     /// </summary>
-    public bool HasPrimSpec(SdfPath path)
-    {
-        return _primSpecs.ContainsKey(path);
-    }
+    public bool HasPrimSpec(SdfPath path) => _primSpecs.ContainsKey(path);
 
     /// <summary>
     /// Remove a prim spec from this layer.
@@ -421,4 +487,86 @@ public class SdfLayer
     }
 
     #endregion
+
+    /// <summary>
+    /// List all field names at the given path, including required fields from schema
+    /// </summary>
+    public List<TfToken> ListFields(SdfPath path) => SdfData.ListFields(_schema, _data, path);
+
+    /// <summary>
+    /// Static helper method for listing fields (matches C++ _ListFields)
+    /// </summary>
+    private static List<TfToken> _ListFields(ISdfSchemaBase schema, SdfData data, SdfPath path)
+        => SdfData.ListFields(schema, data, path);
+
+    /// <summary>
+    /// Removes a field from a spec at the given path.
+    /// </summary>
+    /// <param name="path">The path to the spec.</param>
+    /// <param name="fieldName">The name of the field to erase.</param>
+    public void EraseField(SdfPath path, TfToken fieldName)
+    {
+        if (!PermissionToEdit())
+            throw new InvalidOperationException($"Cannot erase {fieldName} on <{path}>. Layer @{GetIdentifier()}@ is not editable.");
+
+        if (!_data.Has(path, fieldName))
+            return;
+
+        // If this is a required field, only perform the erase if the current value
+        // differs from the fallback. Required fields behave as if they're always
+        // authored, so the effect of an "erase" is to set the value to the fallback
+        // value.
+        var fieldDef = _GetRequiredFieldDef(path, fieldName);
+        if (fieldDef is not null)
+        {
+            if (GetField(path, fieldName).Equals(fieldDef.GetFallbackValue()))
+                return;
+        }
+
+        // Note: with this implementation, erasing a field and undoing that
+        // operation will not restore the underlying data exactly to its
+        // previous state. Specifically, this may cause the order of the fields
+        // for the given spec to change. There are no semantics attached to this
+        // ordering, so this should be OK.
+        _PrimSetField(path, fieldName, new VtValue());
+    }
+
+    /// <summary>
+    /// Removes a dictionary key from a field at the given path.
+    /// </summary>
+    /// <param name="path">The path to the spec.</param>
+    /// <param name="fieldName">The name of the field.</param>
+    /// <param name="keyPath">The key path within the dictionary to erase.</param>
+    public void EraseFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    {
+        if (!PermissionToEdit())
+            throw new InvalidOperationException($"Cannot erase {fieldName}:{keyPath} on <{path}>. Layer @{GetIdentifier()}@ is not editable.");
+
+        if (!_data.HasDictKey(path, fieldName, keyPath)) return;
+
+        // Note: with this implementation, erasing a field and undoing that
+        // operation will not restore the underlying data exactly to its
+        // previous state. Specifically, this may cause the order of the fields
+        // for the given spec to change. There are no semantics attached to this
+        // ordering, so this should be OK.
+        _PrimSetFieldDictValueByKey(path, fieldName, keyPath, new VtValue());
+    }
+
+    /// <summary>
+    /// Gets the required field definition for a field if it exists.
+    /// </summary>
+    private SdfSchemaFieldDefinition? _GetRequiredFieldDef(SdfPath path, TfToken fieldName, SdfSpecType? specType = null)
+    {
+        var schema = GetSchema();
+        if (schema.IsRequiredFieldName(fieldName))
+        {
+            specType ??= GetSpecType(path);
+            var specDef = schema.GetSpecDefinition(specType.Value);
+            if (specDef != null && specDef.IsRequiredField(fieldName))
+            {
+                return schema.GetFieldDefinition(fieldName);
+            }
+        }
+        return null;
+    }
 }

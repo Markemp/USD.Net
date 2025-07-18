@@ -23,10 +23,10 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         
         Assert.True(data.HasSpec(path));
-        Assert.Equal(SdfSpecType.SdfSpecTypePrim, data.GetSpecType(path));
+        Assert.Equal(SdfSpecType.Prim, data.GetSpecType(path));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeUnknown);
+        data.CreateSpec(path, SdfSpecType.Unknown);
         
         Assert.False(data.HasSpec(path));
     }
@@ -46,12 +46,12 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         Assert.True(data.HasSpec(path));
         
         data.EraseSpec(path);
         Assert.False(data.HasSpec(path));
-        Assert.Equal(SdfSpecType.SdfSpecTypeUnknown, data.GetSpecType(path));
+        Assert.Equal(SdfSpecType.Unknown, data.GetSpecType(path));
     }
 
     [Fact]
@@ -61,14 +61,14 @@ public class SdfDataTests
         var oldPath = new SdfPath("/old");
         var newPath = new SdfPath("/new");
         
-        data.CreateSpec(oldPath, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(oldPath, SdfSpecType.Prim);
         data.Set(oldPath, new TfToken("testField"), new VtValue("testValue"));
         
         data.MoveSpec(oldPath, newPath);
         
         Assert.False(data.HasSpec(oldPath));
         Assert.True(data.HasSpec(newPath));
-        Assert.Equal(SdfSpecType.SdfSpecTypePrim, data.GetSpecType(newPath));
+        Assert.Equal(SdfSpecType.Prim, data.GetSpecType(newPath));
         Assert.Equal("testValue", data.Get(newPath, new TfToken("testField")).Get<string>());
     }
 
@@ -80,7 +80,7 @@ public class SdfDataTests
         var field = new TfToken("testField");
         var value = new VtValue("testValue");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         data.Set(path, field, value);
         
         var retrievedValue = data.Get(path, field);
@@ -94,7 +94,7 @@ public class SdfDataTests
         var path = new SdfPath("/test");
         var field = new TfToken("testField");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         data.Set(path, field, new VtValue("testValue"));
         Assert.True(data.Has(path, field));
         
@@ -109,7 +109,7 @@ public class SdfDataTests
         var path = new SdfPath("/test");
         var field = new TfToken("testField");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         data.Set(path, field, new VtValue("testValue"));
         Assert.True(data.Has(path, field));
         
@@ -125,7 +125,7 @@ public class SdfDataTests
         var field1 = new TfToken("field1");
         var field2 = new TfToken("field2");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypePrim);
+        data.CreateSpec(path, SdfSpecType.Prim);
         data.Set(path, field1, new VtValue("value1"));
         data.Set(path, field2, new VtValue("value2"));
         
@@ -143,13 +143,13 @@ public class SdfDataTests
         var field = new TfToken("testField");
         var value = new VtValue("testValue");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.Set(path, field, value);
         
         var hasField = data.HasSpecAndField(path, field, out var retrievedValue, out var specType);
         
         Assert.True(hasField);
-        Assert.Equal(SdfSpecType.SdfSpecTypeAttribute, specType);
+        Assert.Equal(SdfSpecType.Attribute, specType);
         Assert.Equal("testValue", retrievedValue.Get<string>());
     }
 
@@ -161,7 +161,7 @@ public class SdfDataTests
         var time = 1.0;
         var value = new VtValue(42.0);
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, time, value);
         
         Assert.Equal(1, data.GetNumTimeSamplesForPath(path));
@@ -176,7 +176,7 @@ public class SdfDataTests
         var path = new SdfPath("/test.attr");
         var time = 1.0;
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, time, new VtValue(42.0));
         Assert.Equal(1, data.GetNumTimeSamplesForPath(path));
         
@@ -190,7 +190,7 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test.attr");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, 1.0, new VtValue(10.0));
         data.SetTimeSample(path, 2.0, new VtValue(20.0));
         Assert.Equal(2, data.GetNumTimeSamplesForPath(path));
@@ -207,7 +207,7 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test.attr");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, 1.0, new VtValue(10.0));
         data.SetTimeSample(path, 2.0, new VtValue(20.0));
         data.SetTimeSample(path, 3.0, new VtValue(30.0));
@@ -226,8 +226,8 @@ public class SdfDataTests
         var path1 = new SdfPath("/test1.attr");
         var path2 = new SdfPath("/test2.attr");
         
-        data.CreateSpec(path1, SdfSpecType.SdfSpecTypeAttribute);
-        data.CreateSpec(path2, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path1, SdfSpecType.Attribute);
+        data.CreateSpec(path2, SdfSpecType.Attribute);
         
         data.SetTimeSample(path1, 1.0, new VtValue(10.0));
         data.SetTimeSample(path1, 2.0, new VtValue(20.0));
@@ -247,7 +247,7 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test.attr");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, 1.0, new VtValue(10.0));
         data.SetTimeSample(path, 3.0, new VtValue(30.0));
         data.SetTimeSample(path, 5.0, new VtValue(50.0));
@@ -275,7 +275,7 @@ public class SdfDataTests
         var data = new SdfData();
         var path = new SdfPath("/test.attr");
         
-        data.CreateSpec(path, SdfSpecType.SdfSpecTypeAttribute);
+        data.CreateSpec(path, SdfSpecType.Attribute);
         data.SetTimeSample(path, 1.0, new VtValue(10.0));
         data.SetTimeSample(path, 3.0, new VtValue(30.0));
         data.SetTimeSample(path, 5.0, new VtValue(50.0));
@@ -299,8 +299,8 @@ public class SdfDataTests
         var path2 = new SdfPath("/prim2");
         var field = new TfToken("testField");
         
-        source.CreateSpec(path1, SdfSpecType.SdfSpecTypePrim);
-        source.CreateSpec(path2, SdfSpecType.SdfSpecTypeAttribute);
+        source.CreateSpec(path1, SdfSpecType.Prim);
+        source.CreateSpec(path2, SdfSpecType.Attribute);
         source.Set(path1, field, new VtValue("value1"));
         source.Set(path2, field, new VtValue("value2"));
         
@@ -308,8 +308,8 @@ public class SdfDataTests
         
         Assert.True(target.HasSpec(path1));
         Assert.True(target.HasSpec(path2));
-        Assert.Equal(SdfSpecType.SdfSpecTypePrim, target.GetSpecType(path1));
-        Assert.Equal(SdfSpecType.SdfSpecTypeAttribute, target.GetSpecType(path2));
+        Assert.Equal(SdfSpecType.Prim, target.GetSpecType(path1));
+        Assert.Equal(SdfSpecType.Attribute, target.GetSpecType(path2));
         Assert.Equal("value1", target.Get(path1, field).Get<string>());
         Assert.Equal("value2", target.Get(path2, field).Get<string>());
     }

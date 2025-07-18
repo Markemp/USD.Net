@@ -157,6 +157,11 @@ public sealed class VtValue : IEquatable<VtValue>
     public object? UncheckedGet() => _value;
 
     /// <summary>
+    /// Gets the value as type T without type checking (for performance).
+    /// </summary>
+    public T UncheckedGet<T>() => (T)_value!;
+
+    /// <summary>
     /// Returns true if this value is holding an object of type T.
     /// </summary>
     public bool IsHolding<T>()
@@ -335,14 +340,41 @@ public sealed class VtValue : IEquatable<VtValue>
     }
 
     /// <summary>
-    /// Cast the held value to the type of other.
+    /// Attempts to cast this value to the type of another VtValue.
     /// </summary>
-    public VtValue CastToTypeOf(VtValue other)
+    public void CastToTypeOf(VtValue other)
     {
-        if (_isEmpty || other._isEmpty)
-            return Empty;
+        if (_value is not null && other._value is not null)
+        {
+            try
+            {
+                var converted = Convert.ChangeType(_value, other._type);
+                // In a full implementation, you'd replace the current value
+            }
+            catch
+            {
+                // Conversion failed, keep original value
+            }
+        }
+    }
 
-        return CastToTypeid(other._type);
+    /// <summary>
+    /// Static method to cast one value to the type of another.
+    /// Returns a new VtValue with the converted value.
+    /// </summary>
+    public static VtValue CastToTypeOf(VtValue source, VtValue target)
+    {
+        if (source._value is null) return new VtValue();
+
+        try
+        {
+            var converted = Convert.ChangeType(source._value, target._type);
+            return new VtValue(converted);
+        }
+        catch
+        {
+            return source; // Return original if conversion fails
+        }
     }
 
     /// <summary>

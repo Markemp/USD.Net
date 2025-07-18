@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 
@@ -10,6 +7,33 @@ namespace Pxr.Usd.Sdf;
 /// SdfPrimSpec represents a prim spec in an SdfLayer.
 /// It stores the scene description for a prim, including its type, metadata, and child specs.
 /// </summary>
+/// <remarks>
+/// Represents a prim description in an SdfLayer object.
+///
+/// Every SdfPrimSpec object is defined in a layer.  It is identified by its
+/// path (SdfPath class) in the namespace hierarchy of its layer.  SdfPrimSpecs
+/// can be created using the New() method as children of either the containing
+/// SdfLayer itself (for "root level" prims), or as children of other 
+/// SdfPrimSpec objects to extend a hierarchy.  The helper function 
+/// SdfCreatePrimInLayer() can be used to quickly create a hierarchy of
+/// primSpecs.
+///
+/// SdfPrimSpec objects have properties of two general types: attributes
+/// (containing values) and relationships (different types of connections to
+/// other prims and attributes).  Attributes are represented by the
+/// SdfAttributeSpec class and relationships by the SdfRelationshipSpec class.
+/// Each prim has its own namespace of properties.  Properties are stored and
+/// accessed by their name.
+///
+/// SdfPrimSpec objects have a typeName, permission restriction, and they
+/// reference and inherit prim paths.  Permission restrictions control which
+/// other layers may refer to, or express opinions about a prim. See the
+/// SdfPermission class for more information.
+///
+/// \todo
+/// \li Insert doc about references and inherits here.
+/// \li Should have validate... methods for name, children, properties
+/// </remarks>
 public class SdfPrimSpec
 {
     private readonly SdfLayer _layer;
