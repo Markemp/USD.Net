@@ -3,7 +3,7 @@ using Pxr.Base.Vt;
 
 namespace Pxr.Usd.Sdf;
 
-public class SdfData : SdfAbstractData
+public class SdfData : SdfAbstractData, ISdfData
 {
     private readonly Dictionary<SdfPath, SpecData> _data = [];
 

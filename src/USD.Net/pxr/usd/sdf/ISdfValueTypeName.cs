@@ -86,11 +86,6 @@ public interface ISdfValueTypeName : IEquatable<ISdfValueTypeName>
     int GetHashCode();
 
     /// <summary>
-    /// Checks if this type name equals another by value (aliases compare equal).
-    /// </summary>
-    bool Equals(ISdfValueTypeName? other);
-
-    /// <summary>
     /// Checks if this type name equals a string name.
     /// </summary>
     bool Equals(string? typeName);
