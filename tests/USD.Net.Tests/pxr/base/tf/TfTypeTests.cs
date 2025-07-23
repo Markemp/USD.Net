@@ -619,16 +619,13 @@ public class TfTypeTests
     }
 
     [Fact]
-    public void ImplicitBoolOperator_ReturnsFalseForNull()
+    public void ImplicitBoolOperator_ReturnsFalseForUnknownType()
     {
         // Arrange
-        TfType? nullType = null;
+        var unknownType = new TfType();
 
         // Act & Assert
-        if (nullType)
-        {
-            Assert.True(false, "Null type should evaluate to false");
-        }
+        Assert.False(unknownType);
     }
 
     [Fact]
@@ -719,24 +716,24 @@ public class TfTypeTests
     #region Thread Safety Tests
 
     [Fact]
-    public void ConcurrentAccess_TypeRegistration_IsThreadSafe()
+    public async Task ConcurrentAccess_TypeRegistration_IsThreadSafe()
     {
         // Arrange
-        var tasks = new List<System.Threading.Tasks.Task>();
+        var tasks = new List<Task>();
         var types = new System.Collections.Concurrent.ConcurrentBag<TfType>();
 
         // Act
         for (int i = 0; i < 10; i++)
         {
             var index = i;
-            tasks.Add(System.Threading.Tasks.Task.Run(() =>
+            tasks.Add(Task.Run(() =>
             {
                 var type = TfType.Declare($"ConcurrentType_{index}");
                 types.Add(type);
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         Assert.Equal(10, types.Count);
@@ -744,24 +741,24 @@ public class TfTypeTests
     }
 
     [Fact]
-    public void ConcurrentAccess_TypeLookup_IsThreadSafe()
+    public async Task ConcurrentAccess_TypeLookup_IsThreadSafe()
     {
         // Arrange
         var testType = TfType.Define<TestClassForTfType>();
-        var tasks = new List<System.Threading.Tasks.Task>();
+        var tasks = new List<Task>();
         var results = new System.Collections.Concurrent.ConcurrentBag<TfType>();
 
         // Act
         for (int i = 0; i < 100; i++)
         {
-            tasks.Add(System.Threading.Tasks.Task.Run(() =>
+            tasks.Add(Task.Run(() =>
             {
                 var found = TfType.Find<TestClassForTfType>();
                 results.Add(found);
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         Assert.Equal(100, results.Count);

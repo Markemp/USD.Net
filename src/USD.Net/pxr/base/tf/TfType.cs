@@ -6,7 +6,7 @@ namespace Pxr.Base.Tf;
 /// <summary>
 /// TfType represents a dynamic runtime type.
 /// </summary>
-public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
+public sealed class TfType : ITfType, IComparable<TfType>, IEquatable<TfType>
 {
     #region Internal Type Storage
 
@@ -14,10 +14,10 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     {
         public string TypeName { get; set; } = string.Empty;
         public Type? CSharpType { get; set; }
-        public List<TfType> BaseTypes { get; } = new List<TfType>();
-        public List<TfType> DerivedTypes { get; } = new List<TfType>();
-        public Dictionary<TfType, List<string>> DerivedAliases { get; } = new Dictionary<TfType, List<string>>();
-        public Dictionary<string, TfType> AliasToType { get; } = new Dictionary<string, TfType>();
+        public List<TfType> BaseTypes { get; } = [];
+        public List<TfType> DerivedTypes { get; } = [];
+        public Dictionary<TfType, List<string>> DerivedAliases { get; } = [];
+        public Dictionary<string, TfType> AliasToType { get; } = [];
         public FactoryBase? Factory { get; set; }
         public DefinitionCallback? DefinitionCallback { get; set; }
         public bool IsEnum { get; set; }
@@ -26,7 +26,7 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
         public TfType CanonicalType { get; set; } = null!;
 
         // Cached lookup for performance
-        public Dictionary<string, TfType> DerivedByNameCache { get; } = new Dictionary<string, TfType>();
+        public Dictionary<string, TfType> DerivedByNameCache { get; } = [];
     }
 
     #endregion
@@ -35,7 +35,7 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
 
     internal class TypeRegistry
     {
-        private static readonly Lazy<TypeRegistry> _instance = new Lazy<TypeRegistry>(() => new TypeRegistry());
+        private static readonly Lazy<TypeRegistry> _instance = new(() => new TypeRegistry());
         public static TypeRegistry Instance => _instance.Value;
 
         private readonly ConcurrentDictionary<string, TypeInfo> _typesByName = new();
@@ -353,10 +353,10 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     /// </summary>
     public static TfType Find(Type type)
     {
-        if (type == null) return GetUnknownType();
+        if (type is null) return GetUnknownType();
 
         var info = TypeRegistry.Instance.FindByType(type);
-        if (info != null)
+        if (info is not null)
         {
             ExecuteDefinitionCallbackIfNeeded(info);
             return info.CanonicalType;
@@ -372,24 +372,21 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     /// </summary>
     public static TfType Find<T>(T obj)
     {
-        if (obj == null) return GetUnknownType();
+        if (obj is null) return GetUnknownType();
         return Find(obj.GetType());
     }
 
     /// <summary>
     /// Retrieve the TfType corresponding to the given name.
     /// </summary>
-    public static TfType FindByName(string name)
-    {
-        return GetRoot().FindDerivedByName(name);
-    }
+    public static TfType FindByName(string name) => GetRoot().FindDerivedByName(name);
 
     /// <summary>
     /// Return the canonical typeName used for a given Type.
     /// </summary>
     public static string GetCanonicalTypeName(Type type)
     {
-        if (type == null) return "Unknown";
+        if (type is null) return "Unknown";
 
         // For generic types, create a readable name
         if (type.IsGenericType)
@@ -402,9 +399,7 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
 
         // For arrays
         if (type.IsArray)
-        {
             return $"{GetCanonicalTypeName(type.GetElementType()!)}[]";
-        }
 
         // For simple types, just use the full name without namespace
         return type.Name;
@@ -431,18 +426,12 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     /// <summary>
     /// Define a TfType with the given C# type T and no bases.
     /// </summary>
-    public static TfType Define<T>()
-    {
-        return DefineImpl<T>(new Bases());
-    }
+    public static TfType Define<T>() => DefineImpl<T>(new Bases());
 
     /// <summary>
     /// Define a TfType with the given C# type T and base type B.
     /// </summary>
-    public static TfType Define<T, B>()
-    {
-        return DefineImpl<T>(Bases.Create<B>());
-    }
+    public static TfType Define<T, B>() => DefineImpl<T>(Bases.Create<B>());
 
     private static TfType DefineImpl<T>(Bases bases)
     {
@@ -584,7 +573,7 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     {
         if (_info.DerivedAliases.TryGetValue(derivedType, out var aliases))
             return aliases.ToList();
-        return new List<string>();
+        return [];
     }
 
     /// <summary>
@@ -593,6 +582,26 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     public IList<TfType> GetBaseTypes()
     {
         return _info.BaseTypes.ToList();
+    }
+
+    /// <summary>
+    /// Copy the first maxBases base types of this type to outTypes, or all
+    /// the base types if this type has maxBases or fewer base types. Return
+    /// this type's number of base types.
+    /// </summary>
+    public int GetNBaseTypes(TfType[] outTypes, int maxBases)
+    {
+        if (outTypes == null) throw new ArgumentNullException(nameof(outTypes));
+        
+        var baseTypes = _info.BaseTypes;
+        var count = Math.Min(baseTypes.Count, Math.Min(maxBases, outTypes.Length));
+        
+        for (int i = 0; i < count; i++)
+        {
+            outTypes[i] = baseTypes[i];
+        }
+        
+        return baseTypes.Count;
     }
 
     /// <summary>
@@ -693,6 +702,15 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     }
 
     /// <summary>
+    /// Convenience method to add an alias and return this.
+    /// </summary>
+    public TfType Alias(TfType baseType, string name)
+    {
+        AddAlias(baseType, name);
+        return this;
+    }
+
+    /// <summary>
     /// Sets the factory object for this type.
     /// </summary>
     public void SetFactory(FactoryBase factory)
@@ -710,6 +728,47 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
     {
         ExecuteDefinitionCallbackIfNeeded(_info);
         return _info.Factory as T;
+    }
+
+    /// <summary>
+    /// Cast obj to the ancestor type.
+    /// In C#, this performs a standard cast operation with type checking.
+    /// </summary>
+    public object? CastToAncestor(TfType ancestor, object? obj)
+    {
+        if (ancestor is null) throw new ArgumentNullException(nameof(ancestor));
+        if (obj is null) return null;
+        
+        if (!IsA(ancestor))
+            throw new InvalidOperationException($"Type {TypeName} does not derive from {ancestor.TypeName}");
+        
+        // In C#, we can use the type's C# type to perform casting
+        if (ancestor._info.CSharpType != null && ancestor._info.CSharpType.IsAssignableFrom(obj.GetType()))
+        {
+            return obj;
+        }
+        
+        throw new InvalidCastException($"Cannot cast object of type {obj.GetType()} to {ancestor.TypeName}");
+    }
+
+    /// <summary>
+    /// Cast obj from the ancestor type to this type.
+    /// In C#, this performs a standard cast operation with type checking.
+    /// </summary>
+    public object? CastFromAncestor(TfType ancestor, object? obj)
+    {
+        if (ancestor is null) throw new ArgumentNullException(nameof(ancestor));
+        if (obj is null) return null;
+        
+        if (!IsA(ancestor))
+            throw new InvalidOperationException($"Type {TypeName} does not derive from {ancestor.TypeName}");
+        
+        // Verify the object is actually of this type or derived from it
+        var objType = Find(obj.GetType());
+        if (!objType.IsA(this))
+            throw new InvalidCastException($"Object of type {objType.TypeName} is not compatible with {TypeName}");
+        
+        return obj;
     }
 
     #endregion
@@ -741,13 +800,13 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
 
     public override int GetHashCode() => _info?.GetHashCode() ?? 0;
 
-    public static bool operator ==(TfType left, TfType right)
+    public static bool operator ==(TfType? left, TfType? right)
     {
         if (left is null) return right is null;
         return left.Equals(right);
     }
 
-    public static bool operator !=(TfType left, TfType right) => !(left == right);
+    public static bool operator !=(TfType? left, TfType? right) => !(left == right);
 
     public int CompareTo(TfType? other)
     {
@@ -755,7 +814,7 @@ public sealed class TfType : IComparable<TfType>, IEquatable<TfType>
         return string.Compare(TypeName, other.TypeName, StringComparison.Ordinal);
     }
 
-    public static implicit operator bool(TfType type) => type is not null && !type.IsUnknown;
+    public static implicit operator bool(TfType? type) => type is not null && !type.IsUnknown;
 
     public override string ToString() => TypeName;
 

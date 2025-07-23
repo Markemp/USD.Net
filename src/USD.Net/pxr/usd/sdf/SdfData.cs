@@ -11,8 +11,6 @@ public class SdfData : SdfAbstractData, ISdfData
 
     public override bool StreamsData() => false;
 
-    public override bool IsDetached() => true;
-
     public override bool HasSpec(SdfPath path) => _data.ContainsKey(path);
 
     public override void EraseSpec(SdfPath path)
@@ -161,8 +159,8 @@ public class SdfData : SdfAbstractData, ISdfData
         var newValue = _GetOrCreateFieldValue(path, field);
         if (newValue is not null)
         {
-            var vtValue = new VtValue();
-            value.GetValue(vtValue);
+            // Option 1: Use the parameterless GetValue()
+            var vtValue = value.GetValue();
             _data[path].Fields[field] = vtValue;
         }
     }

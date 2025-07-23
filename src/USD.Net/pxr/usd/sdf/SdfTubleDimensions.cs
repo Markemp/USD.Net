@@ -55,7 +55,7 @@ public readonly record struct SdfTupleDimensions : IEquatable<SdfTupleDimensions
 
         if (Size == 0) return true;
 
-        if (_dimensions == null || other._dimensions == null)
+        if (_dimensions is null || other._dimensions is null)
             return _dimensions == other._dimensions;
 
         for (int i = 0; i < Size; i++)

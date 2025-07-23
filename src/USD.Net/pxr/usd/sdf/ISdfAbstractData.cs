@@ -32,7 +32,7 @@ public interface ISdfAbstractData
     /// Return true if this data is detached from its serialized data store,
     /// false otherwise. Default implementation returns !StreamsData().
     /// </summary>
-    bool IsDetached();
+    bool IsDetached() => !StreamsData();
 
     /// <summary>
     /// Return true if this data object contains no specs.
@@ -49,7 +49,7 @@ public interface ISdfAbstractData
     /// Write this data object's contents to stream.
     /// This is useful for debugging.
     /// </summary>
-    void WriteToStream(System.IO.TextWriter stream);
+    void WriteToStream(TextWriter stream);
 
     /// <summary>
     /// Copy the data from source into this object.
@@ -128,7 +128,7 @@ public interface ISdfAbstractData
     /// Return a type_info for the type of the value of the field identified
     /// by path and fieldName. Returns typeid(void) if no field exists.
     /// </summary>
-    Type GetTypeid(SdfPath path, TfToken fieldName);
+    Type GetTypeid(SdfPath path, TfToken fieldName) => Get(path, fieldName).GetType();
 
     /// <summary>
     /// Type-checked value accessor.

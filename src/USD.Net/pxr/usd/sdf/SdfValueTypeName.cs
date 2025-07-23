@@ -13,11 +13,11 @@ using Pxr.Usd.Tf;
 /// </summary>
 internal sealed class SdfValueTypeMetadata
 {
-    public TfType Type { get; init; } = TfType.Unknown;
+    public TfType Type { get; init; } = new();
     public string CppTypeName { get; init; } = string.Empty;
     public TfToken Role { get; init; } = TfToken.Empty;
     public VtValue DefaultValue { get; init; } = VtValue.Empty;
-    public TfEnum DefaultUnit { get; init; } = TfEnum.Unknown; // Assuming TfEnum.Unknown exists
+    public TfEnum DefaultUnit { get; init; }
     public SdfTupleDimensions Dimensions { get; init; } = new();
     public List<TfToken> Aliases { get; init; } = new();
 
@@ -72,10 +72,10 @@ public sealed class SdfValueTypeName : ISdfValueTypeName, IEquatable<SdfValueTyp
 
     // Interface implementation
     public TfToken Name => _name;
-    public Type? UnderlyingType => _metadata.Type.UnderlyingSystemType; // Assuming TfType has this
+    public Type? UnderlyingType => _metadata.Type.Typeid;
     public string CppTypeName => _metadata.CppTypeName;
     public TfToken? Role => _metadata.Role.IsEmpty ? null : _metadata.Role;
-    public VtValue? DefaultValue => _metadata.DefaultValue.IsEmpty ? null : _metadata.DefaultValue;
+    public VtValue? DefaultValue => _metadata.DefaultValue.IsEmpty() ? null : _metadata.DefaultValue;
     public object? DefaultUnit => _metadata.DefaultUnit; // Return TfEnum directly
     public SdfTupleDimensions Dimensions => _metadata.Dimensions;
     public IReadOnlyList<TfToken> Aliases => _metadata.Aliases;
