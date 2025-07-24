@@ -29,16 +29,16 @@ public enum SdfSpecifier
 
 public enum SdfPermission
 {
-    SdfPermissionPublic,
-    SdfPermissionPrivate,
-    SdfNumPermissions
+    Public,
+    Private,
+    NumPermissions
 }
 
 public enum SdfVariability
 {
-    SdfVariabilityVarying,
-    SdfVariabilityUniform,
-    SdfNumVariabilities
+    Varying,
+    Uniform,
+    NumVariabilities
 }
 
 public static class SdfSpecifierHelpers
