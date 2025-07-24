@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 
+// AIDEV-NOTE: Interface based on OpenUSD SdfSchemaBase - DO NOT MODIFY WITHOUT PERMISSION
 /// <summary>
 /// Interface for generic class that provides information about scene description fields
 /// but doesn't actually provide any fields.
