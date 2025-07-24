@@ -117,7 +117,7 @@ public class SdfSchemaBase : ISdfSchemaBase
         if (value.IsEmpty())
             return SdfValueTypeName.Invalid;
         
-        return FindType(value.GetUnderlyingType(), role);
+        return FindType(value.GetHeldType(), role);
     }
 
     public virtual SdfValueTypeName FindOrCreateType(TfToken typeName)
