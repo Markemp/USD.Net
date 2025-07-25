@@ -4,6 +4,8 @@ using Pxr.Base.Vt;
 
 namespace Pxr.Usd.Sdf;
 
+using FileFormatArguments = Dictionary<string, string>;
+
 /// <summary>
 /// SdfLayer represents a scene description container that can combine with other layers to form compositions.
 /// It stores scene description data and participates in USD's layered composition system.
@@ -41,7 +43,7 @@ namespace Pxr.Usd.Sdf;
 /// is 24, then a sample at time ordinate 24 should be viewed exactly one second
 /// after the sample at time ordinate 0.
 /// </remarks>
-public class SdfLayer
+public class SdfLayer : ISdfLayer
 {
     private readonly Dictionary<string, object> _metadata = new();
     private readonly Dictionary<SdfPath, SdfPrimSpec> _primSpecs = new();
@@ -102,7 +104,7 @@ public class SdfLayer
     /// <summary>
     /// Export this layer to a file.
     /// </summary>
-    public bool Export(string filename, string? comment = null)
+    public bool Export(string filename, string comment = "", FileFormatArguments? args = null)
     {
         if (string.IsNullOrEmpty(filename))
             return false;
