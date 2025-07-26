@@ -342,7 +342,11 @@ public interface ISdfLayer
     /// </summary>
     /// <param name="defaultValue">The value to return if the field is not set.</param>
     /// <returns>The field value, or defaultValue if none is set.</returns>
-    T GetFieldAs<T>(SdfPath path, TfToken fieldName, T defaultValue = default);
+    /// <remarks>
+    /// For reference types, if no defaultValue is provided, default(T) will be null.
+    /// For value types, if no defaultValue is provided, default(T) will be the zero value.
+    /// </remarks>
+    T GetFieldAs<T>(SdfPath path, TfToken fieldName, T defaultValue = default!);
 
     /// <summary>
     /// Return the value for the given path and fieldName at keyPath.
