@@ -190,8 +190,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
     public void SetDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, SdfAbstractDataConstValue value)
     {
-        var vtval = new VtValue();
-        value.GetValue(vtval);
+        var vtval = value.GetValue();
         SetDictValueByKey(path, fieldName, keyPath, vtval);
     }
 

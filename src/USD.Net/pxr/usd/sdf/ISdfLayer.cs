@@ -396,7 +396,7 @@ public interface ISdfLayer
     /// </summary>
     /// <param name="path">The root path to begin traversal.</param>
     /// <param name="func">The function to call for each spec.</param>
-    void Traverse(SdfPath path, Action<SdfPath> func);
+    void Traverse(SdfPath path, Action<ISdfPath> func);
 
     #endregion
 

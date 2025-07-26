@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 
@@ -458,6 +456,7 @@ public class SdfLayer : ISdfLayer
     /// Check if this layer has a spec at the given path
     /// </summary>
     public bool HasSpec(SdfPath path) => _data.HasSpec(path);
+    public bool HasSpec(ISdfPath path) => path is SdfPath sdfPath && _data.HasSpec(sdfPath);
 
     /// <summary>
     /// Get the spec type at the given path
@@ -468,6 +467,8 @@ public class SdfLayer : ISdfLayer
     /// Get a field value at the given path
     /// </summary>
     public VtValue GetField(SdfPath path, TfToken fieldName) => _data.Get(path, fieldName);
+    public VtValue GetField(ISdfPath path, TfToken fieldName) => 
+        path is SdfPath sdfPath ? _data.Get(sdfPath, fieldName) : VtValue.Empty;
 
     /// <summary>
     /// Check if a field exists at the given path
@@ -740,11 +741,13 @@ public class SdfLayer : ISdfLayer
     /// List all field names at the given path, including required fields from schema
     /// </summary>
     public IReadOnlyList<TfToken> ListFields(SdfPath path) => SdfData.ListFields(_schema, _data, path);
+    public IReadOnlyList<TfToken> ListFields(ISdfPath path) => 
+        path is SdfPath sdfPath ? SdfData.ListFields(_schema, _data, sdfPath) : Array.Empty<TfToken>();
     
     /// <summary>
     /// Traverse the scene description hierarchy rooted at path
     /// </summary>
-    public void Traverse(SdfPath path, Action<SdfPath> func)
+    public void Traverse(SdfPath path, Action<ISdfPath> func)
     {
         if (func == null)
             return;
@@ -753,7 +756,7 @@ public class SdfLayer : ISdfLayer
         TraverseRecursive(path, func);
     }
     
-    private void TraverseRecursive(SdfPath path, Action<SdfPath> func)
+    private void TraverseRecursive(ISdfPath path, Action<ISdfPath> func)
     {
         if (!HasSpec(path))
             return;
@@ -787,7 +790,7 @@ public class SdfLayer : ISdfLayer
                fieldName.Equals(SdfChildrenKeys.MapperArgChildren);
     }
     
-    private void TraverseChildrenField(SdfPath parentPath, TfToken fieldName, Action<SdfPath> func)
+    private void TraverseChildrenField(ISdfPath parentPath, TfToken fieldName, Action<ISdfPath> func)
     {
         var childrenValue = GetField(parentPath, fieldName);
         if (childrenValue.IsEmpty())
@@ -801,9 +804,7 @@ public class SdfLayer : ISdfLayer
             {
                 var childPath = GetChildPath(parentPath, fieldName, childName);
                 if (!childPath.IsEmpty())
-                {
                     TraverseRecursive(childPath, func);
-                }
             }
         }
         // Some children might be stored as other collection types
@@ -814,14 +815,12 @@ public class SdfLayer : ISdfLayer
             {
                 var childPath = GetChildPath(parentPath, fieldName, childName);
                 if (!childPath.IsEmpty())
-                {
                     TraverseRecursive(childPath, func);
-                }
             }
         }
     }
     
-    private SdfPath GetChildPath(SdfPath parentPath, TfToken fieldName, TfToken childName)
+    private ISdfPath GetChildPath(ISdfPath parentPath, TfToken fieldName, TfToken childName)
     {
         // Construct child path based on the type of children field
         if (fieldName.Equals(SdfChildrenKeys.PrimChildren))
@@ -941,7 +940,7 @@ public class SdfLayer : ISdfLayer
             if (path.IsAbsoluteRootPath())
                 specType = SdfSpecType.PseudoRoot;
             else if (path.IsPropertyPath())
-                specType = path.IsAttributePath() ? SdfSpecType.Attribute : SdfSpecType.Relationship;
+                specType = SdfSpecType.Attribute; // Default to attribute for property paths
             else
                 specType = SdfSpecType.Prim;
                 
@@ -968,7 +967,7 @@ public class SdfLayer : ISdfLayer
             if (path.IsAbsoluteRootPath())
                 specType = SdfSpecType.PseudoRoot;
             else if (path.IsPropertyPath())
-                specType = path.IsAttributePath() ? SdfSpecType.Attribute : SdfSpecType.Relationship;
+                specType = SdfSpecType.Attribute; // Default to attribute for property paths
             else
                 specType = SdfSpecType.Prim;
                 
