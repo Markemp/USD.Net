@@ -139,7 +139,7 @@ public readonly struct SdfPath : ISdfPath
     /// </summary>
     public static TfToken StripNamespace(TfToken name)
         => new TfToken(StripNamespace(name.GetText()));
-    }
+    
     /// <summary>
     /// Returns (name, true) where name is stripped of the prefix specified by matchNamespace
     /// if name indeed starts with matchNamespace. Returns (name, false) otherwise, with name unmodified.
