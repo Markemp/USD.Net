@@ -109,6 +109,53 @@ async def render_feed(...):
   - Use built-in .NET types whenever possible
   - Only create custom types when USD semantics require it (e.g., SdfPath, TfToken)
 
+### Interface Design Strategy
+USD.Net uses interfaces to maintain strict compatibility with OpenUSD's public API, ensuring developers can reference OpenUSD documentation directly when using the C# version.
+
+#### Interface Adoption Tiers:
+- **Tier 1 (Essential - Required interfaces)**:
+  - `IUsdStage` - Scene management, composition orchestration
+  - `IUsdPrim` - Scene graph traversal, prim operations  
+  - `IUsdAttribute` - Getting/setting attribute values, time samples
+  - `IUsdRelationship` - Target management, connections
+
+- **Tier 2 (High Usage - Strong candidates)**:
+  - `IUsdTimeCode` - Time/frame operations
+  - `IUsdEditTarget` - Authoring control
+  - `IUsdVariantSets` / `IUsdVariantSet` - Variant management
+  - `IUsdReferences` - Reference composition
+
+- **Tier 3 (Specialized but Important)**:
+  - Geometry schema interfaces (`IUsdGeomMesh`, `IUsdGeomXform`, etc.)
+  - `IUsdSchemaBase` / `IUsdTyped` - Schema foundation
+
+#### Interface Implementation Guidelines:
+- **API Compatibility**: Method signatures exactly match OpenUSD C++ API (adapted for C#)
+- **Documentation Mapping**: XML docs reference OpenUSD documentation URLs
+- **Method Names**: Exact match to C++ (using C# PascalCase conventions)
+- **Parameter Order**: Match C++ signatures where possible
+- **Return Types**: Use closest C# equivalent, document differences
+- **Overloads**: Mirror C++ overload patterns
+- **Default Values**: Match C++ default parameters
+- **Version Tracking**: Interfaces tagged with compatible OpenUSD version
+
+#### Benefits:
+- **Documentation Alignment**: C++ developers can directly use OpenUSD docs
+- **API Drift Prevention**: Interface acts as contract preventing compatibility breaks
+- **Cross-Language Efficiency**: Python USD users can easily transition to C# USD.Net
+- **Tutorial Compatibility**: OpenUSD examples work with minimal syntax translation
+
+#### Internal Method Access Pattern:
+When public interface methods need access to internal implementation methods (following C++ friend class pattern):
+```csharp
+// Cast interface to concrete type for internal method access
+var layer = GetLayer();
+if (layer is SdfLayer concreteLayer)
+{
+    return concreteLayer._IsInert(path, ignoreChildren);
+}
+```
+
 ### Testing Strategy
 - **Test Organization**: 
   - **Unit Tests**: `tests/USD.Net.Tests/` - Fast, isolated tests with no external dependencies
