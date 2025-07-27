@@ -2,27 +2,17 @@ using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
 
-/// <summary>
-/// UsdRelationship creates dependencies between scenegraph objects by allowing a prim to target 
-/// other prims, attributes, or relationships. Relationships are always uniform (do not vary over time).
-/// </summary>
-public class UsdRelationship : UsdProperty
+public class UsdRelationship : UsdProperty, IUsdRelationship
 {
     private readonly List<ISdfPath> _targets = new();
     private readonly List<ISdfPath> _explicitTargets = new();
 
     #region Construction
 
-    /// <summary>
-    /// Create an invalid relationship.
-    /// </summary>
     public UsdRelationship() : base()
     {
     }
 
-    /// <summary>
-    /// Create a relationship with stage and path.
-    /// </summary>
     public UsdRelationship(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
@@ -31,9 +21,6 @@ public class UsdRelationship : UsdProperty
 
     #region Target Management
 
-    /// <summary>
-    /// Add a target path to this relationship.
-    /// </summary>
     public virtual bool AddTarget(ISdfPath target, UsdListPosition position = UsdListPosition.BackOfPrependList)
     {
         if (target.IsEmpty())
@@ -68,9 +55,6 @@ public class UsdRelationship : UsdProperty
         return true;
     }
 
-    /// <summary>
-    /// Remove a target from this relationship.
-    /// </summary>
     public virtual bool RemoveTarget(ISdfPath target)
     {
         if (target.IsEmpty())
@@ -79,9 +63,6 @@ public class UsdRelationship : UsdProperty
         return _targets.Remove(target);
     }
 
-    /// <summary>
-    /// Explicitly set all targets for this relationship, replacing any existing targets.
-    /// </summary>
     public virtual bool SetTargets(IEnumerable<ISdfPath> targets)
     {
         if (targets is null)
@@ -97,33 +78,35 @@ public class UsdRelationship : UsdProperty
         return true;
     }
 
-    /// <summary>
-    /// Clear all target opinions from this relationship.
-    /// </summary>
-    public virtual bool ClearTargets()
+    public virtual bool ClearTargets(bool removeSpec = false)
     {
         _targets.Clear();
         _explicitTargets.Clear();
+        // TODO: Implement removeSpec behavior - remove the relationship spec entirely if true
         return true;
     }
 
-    /// <summary>
-    /// Get the composed targets for this relationship.
-    /// </summary>
-    public virtual ISdfPath[] GetTargets() => _targets.ToArray();
+    public virtual bool GetTargets(out IReadOnlyList<ISdfPath> targets)
+    {
+        targets = _targets.AsReadOnly();
+        return _targets.Count > 0;
+    }
+    
+    public virtual IReadOnlyList<ISdfPath> GetTargets() => _targets.AsReadOnly();
 
-    /// <summary>
-    /// Return true if this relationship has any targets.
-    /// </summary>
     public virtual bool HasTargets() => _targets.Count > 0;
+    
+    public virtual bool HasAuthoredTargets()
+    {
+        // TODO: Implement proper authored opinion checking
+        // For now, check if we have any targets or explicit targets
+        return _targets.Count > 0 || _explicitTargets.Count > 0;
+    }
 
     #endregion
 
     #region Target Validation
 
-    /// <summary>
-    /// Return true if the given path is a valid target for this relationship.
-    /// </summary>
     public virtual bool IsValidTarget(ISdfPath target)
     {
         if (target.IsEmpty())
@@ -141,19 +124,13 @@ public class UsdRelationship : UsdProperty
         return true;
     }
 
-    /// <summary>
-    /// Return true if all current targets are valid.
-    /// </summary>
     public virtual bool HasValidTargets() => _targets.All(IsValidTarget);
 
     #endregion
 
     #region Target Resolution
 
-    /// <summary>
-    /// Resolve ultimate targets by following relationship forwarding chains.
-    /// </summary>
-    public virtual ISdfPath[] GetForwardedTargets()
+    public virtual bool GetForwardedTargets(out IReadOnlyList<ISdfPath> targets)
     {
         var forwardedTargets = new List<ISdfPath>();
         var visited = new HashSet<ISdfPath>();
@@ -163,7 +140,14 @@ public class UsdRelationship : UsdProperty
             ResolveForwardedTarget(target, forwardedTargets, visited);
         }
 
-        return forwardedTargets.ToArray();
+        targets = forwardedTargets.AsReadOnly();
+        return forwardedTargets.Count > 0;
+    }
+    
+    public virtual IReadOnlyList<ISdfPath> GetForwardedTargets()
+    {
+        GetForwardedTargets(out var targets);
+        return targets;
     }
 
     /// <summary>
@@ -178,7 +162,7 @@ public class UsdRelationship : UsdProperty
         visited.Add(target);
 
         var stage = GetStage();
-        if (stage == null)
+        if (stage is null)
         {
             results.Add(target);
             return;
@@ -220,45 +204,24 @@ public class UsdRelationship : UsdProperty
 
     #region Target Queries
 
-    /// <summary>
-    /// Return true if this relationship targets the given path.
-    /// </summary>
-    public virtual bool HasTarget(ISdfPath target)
-    {
-        return _targets.Contains(target);
-    }
+    public virtual bool HasTarget(ISdfPath target) => _targets.Contains(target);
 
-    /// <summary>
-    /// Get the number of targets for this relationship.
-    /// </summary>
-    public virtual int GetNumTargets()
-    {
-        return _targets.Count;
-    }
+    public virtual int GetNumTargets() => _targets.Count;
 
-    /// <summary>
-    /// Get targets filtered by a predicate.
-    /// </summary>
-    public virtual ISdfPath[] GetTargets(Func<ISdfPath, bool> predicate)
-    {
-        return _targets.Where(predicate).ToArray();
-    }
+    public virtual IReadOnlyList<ISdfPath> GetTargets(Func<ISdfPath, bool> predicate)
+        => _targets.Where(predicate).ToList().AsReadOnly();
 
     /// <summary>
     /// Get all prim targets (excluding attribute/relationship targets).
     /// </summary>
     public virtual ISdfPath[] GetPrimTargets()
-    {
-        return _targets.Where(path => path.IsPrimPath()).ToArray();
-    }
+        => _targets.Where(path => path.IsPrimPath()).ToArray();
 
     /// <summary>
     /// Get all property targets (attribute and relationship targets).
     /// </summary>
     public virtual ISdfPath[] GetPropertyTargets()
-    {
-        return _targets.Where(path => path.IsPropertyPath()).ToArray();
-    }
+        => _targets.Where(path => path.IsPropertyPath()).ToArray();
 
     #endregion
 
@@ -314,13 +277,6 @@ public class UsdRelationship : UsdProperty
 
     #region Composition and Authoring
 
-    /// <summary>
-    /// Return true if this relationship has explicitly authored targets.
-    /// </summary>
-    public virtual bool HasAuthoredTargets()
-    {
-        return _explicitTargets.Count > 0;
-    }
 
     /// <summary>
     /// Get the explicitly authored targets (before list composition).
@@ -373,9 +329,7 @@ public class UsdRelationship : UsdProperty
     /// Return true if this relationship is defined and has valid targets.
     /// </summary>
     public override bool IsDefined()
-    {
-        return base.IsDefined() && HasValidTargets();
-    }
+        => base.IsDefined() && HasValidTargets();
 
     #endregion
 }

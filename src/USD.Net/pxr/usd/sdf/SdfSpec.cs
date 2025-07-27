@@ -652,12 +652,12 @@ public abstract class SdfSpec : ISdfSpec
 
     public bool Equals(ISdfSpec? other)
     {
-        throw new NotImplementedException();
+        return Equals(other as SdfSpec);
     }
 
     public int CompareTo(ISdfSpec? other)
     {
-        throw new NotImplementedException();
+        return CompareTo(other as SdfSpec);
     }
 
     #endregion
