@@ -8,18 +8,15 @@ using Pxr.Base.Vt;
 /// <summary>
 /// Concrete implementation of field definition.
 /// </summary>
-internal class SdfFieldDefinition : IFieldDefinition
+internal class SdfFieldDefinition : ISdfFieldDefinition
 {
-    private readonly SdfSchemaBase _schema;
+    private readonly ISdfSchemaBase _schema;
+    private readonly TfToken _name;
+    private VtValue _fallbackValue;
+    private bool _isPlugin;
+    private bool _isReadOnly;
+    private bool _holdsChildren;
     private readonly List<KeyValuePair<TfToken, object>> _info = new();
-    
-    public TfToken Name { get; }
-    public VtValue FallbackValue { get; private set; }
-    public bool IsPlugin { get; private set; }
-    public bool IsReadOnly { get; private set; }
-    public bool HoldsChildren { get; private set; }
-    
-    public IReadOnlyList<KeyValuePair<TfToken, object>> Info => _info.AsReadOnly();
     
     // Validator delegates
     private Func<VtValue, SdfAllowed>? _valueValidator;
@@ -27,35 +24,44 @@ internal class SdfFieldDefinition : IFieldDefinition
     private Func<VtValue, SdfAllowed>? _mapKeyValidator;
     private Func<VtValue, SdfAllowed>? _mapValueValidator;
     
-    public SdfFieldDefinition(SdfSchemaBase schema, TfToken name, VtValue fallbackValue)
+    public SdfFieldDefinition(ISdfSchemaBase schema, TfToken name, VtValue fallbackValue)
     {
         _schema = schema ?? throw new ArgumentNullException(nameof(schema));
-        Name = name;
-        FallbackValue = fallbackValue;
+        _name = name;
+        _fallbackValue = fallbackValue;
     }
+    
+    // ISdfFieldDefinition implementation
+    public TfToken GetName() => _name;
+    public VtValue GetFallbackValue() => _fallbackValue;
+    public IReadOnlyList<KeyValuePair<TfToken, object>> GetInfo() => _info.AsReadOnly();
+    public bool IsPlugin() => _isPlugin;
+    public bool IsReadOnly() => _isReadOnly;
+    public bool HoldsChildren() => _holdsChildren;
     
     // Fluent API for field configuration
     public SdfFieldDefinition WithFallbackValue(VtValue value)
     {
-        FallbackValue = value;
+        _fallbackValue = value;
         return this;
     }
     
     public SdfFieldDefinition AsPlugin()
     {
-        IsPlugin = true;
+        _isPlugin = true;
         return this;
     }
     
     public SdfFieldDefinition AsReadOnly()
     {
-        IsReadOnly = true;
+        _isReadOnly = true;
         return this;
     }
     
     public SdfFieldDefinition AsChildren()
     {
-        HoldsChildren = true;
+        _holdsChildren = true;
+        _isReadOnly = true;  // Match C++ behavior: Children() also sets read-only
         return this;
     }
     
@@ -91,22 +97,14 @@ internal class SdfFieldDefinition : IFieldDefinition
     
     // Validation methods
     public SdfAllowed IsValidValue<T>(T value)
-    {
-        return _valueValidator?.Invoke(new VtValue(value)) ?? SdfAllowed.IsAllowed();
-    }
+        => _valueValidator?.Invoke(new VtValue(value)) ?? new SdfAllowed(true);
     
     public SdfAllowed IsValidListValue<T>(T value)
-    {
-        return _listValueValidator?.Invoke(new VtValue(value)) ?? SdfAllowed.IsAllowed();
-    }
+        => _listValueValidator?.Invoke(new VtValue(value)) ?? new SdfAllowed(true);
     
     public SdfAllowed IsValidMapKey<T>(T value)
-    {
-        return _mapKeyValidator?.Invoke(new VtValue(value)) ?? SdfAllowed.IsAllowed();
-    }
+        => _mapKeyValidator?.Invoke(new VtValue(value)) ?? new SdfAllowed(true);
     
     public SdfAllowed IsValidMapValue<T>(T value)
-    {
-        return _mapValueValidator?.Invoke(new VtValue(value)) ?? SdfAllowed.IsAllowed();
-    }
+        => _mapValueValidator?.Invoke(new VtValue(value)) ?? new SdfAllowed(true);
 }

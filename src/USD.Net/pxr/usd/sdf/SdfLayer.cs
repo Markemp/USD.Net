@@ -45,12 +45,12 @@ using FileFormatArguments = Dictionary<string, string>;
 /// </remarks>
 public class SdfLayer : ISdfLayer
 {
-    private readonly Dictionary<SdfPath, SdfPrimSpec> _primSpecs = new();
+    private readonly Dictionary<ISdfPath, SdfPrimSpec> _primSpecs = new();
     private readonly string _identifier;
     private bool _isDirty = false;
-    private static readonly ConcurrentDictionary<string, SdfLayer> _layerRegistry = new();
+    private static readonly ConcurrentDictionary<string, ISdfLayer> _layerRegistry = new();
     private readonly ISdfSchemaBase _schema;
-    private SdfData _data;
+    private ISdfData _data;
     private ISdfFileFormat? _fileFormat;
     private FileFormatArguments _fileFormatArgs = new();
     private bool _permissionToEdit = true;
@@ -455,13 +455,12 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if this layer has a spec at the given path
     /// </summary>
-    public bool HasSpec(SdfPath path) => _data.HasSpec(path);
-    public bool HasSpec(ISdfPath path) => path is SdfPath sdfPath && _data.HasSpec(sdfPath);
+    public bool HasSpec(ISdfPath path) => path is ISdfPath sdfPath && _data.HasSpec(sdfPath);
 
     /// <summary>
     /// Get the spec type at the given path
     /// </summary>
-    public SdfSpecType GetSpecType(SdfPath path) => _data.GetSpecType(path);
+    public SdfSpecType GetSpecType(ISdfPath path) => _data.GetSpecType(path);
 
     /// <summary>
     /// Get a field value at the given path
@@ -473,12 +472,12 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if a field exists at the given path
     /// </summary>
-    public bool HasField(SdfPath path, TfToken fieldName) => _data.Has(path, fieldName);
+    public bool HasField(ISdfPath path, TfToken fieldName) => _data.Has(path, fieldName);
     
     /// <summary>
     /// Check if a field exists at the given path with output value
     /// </summary>
-    public bool HasField(SdfPath path, TfToken fieldName, out VtValue? value)
+    public bool HasField(ISdfPath path, TfToken fieldName, out VtValue? value)
     {
         if (_data.Has(path, fieldName))
         {
@@ -492,7 +491,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if a field exists with the specified type
     /// </summary>
-    public bool HasField<T>(SdfPath path, TfToken fieldName, out T? value)
+    public bool HasField<T>(ISdfPath path, TfToken fieldName, out T? value)
     {
         if (_data.Has(path, fieldName))
         {
@@ -510,7 +509,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Get a field value with default fallback
     /// </summary>
-    public T GetFieldAs<T>(SdfPath path, TfToken fieldName, T defaultValue = default!)
+    public T GetFieldAs<T>(ISdfPath path, TfToken fieldName, T defaultValue = default!)
     {
         if (HasField<T>(path, fieldName, out var value))
             return value!;
@@ -520,7 +519,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if a dictionary field has a specific key
     /// </summary>
-    public bool HasFieldDictKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public bool HasFieldDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         return _data.HasDictKey(path, fieldName, keyPath);
     }
@@ -528,7 +527,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if a dictionary field has a specific key with output value
     /// </summary>
-    public bool HasFieldDictKey(SdfPath path, TfToken fieldName, TfToken keyPath, out VtValue? value)
+    public bool HasFieldDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath, out VtValue? value)
     {
         if (_data.HasDictKey(path, fieldName, keyPath))
         {
@@ -542,7 +541,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Check if a dictionary field has a specific key with typed output
     /// </summary>
-    public bool HasFieldDictKey<T>(SdfPath path, TfToken fieldName, TfToken keyPath, out T? value)
+    public bool HasFieldDictKey<T>(ISdfPath path, TfToken fieldName, TfToken keyPath, out T? value)
     {
         if (_data.HasDictKey(path, fieldName, keyPath))
         {
@@ -560,7 +559,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Get a dictionary field value by key
     /// </summary>
-    public VtValue GetFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public VtValue GetFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         return _data.GetDictValueByKey(path, fieldName, keyPath);
     }
@@ -568,7 +567,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Set a dictionary field value by key
     /// </summary>
-    public void SetFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
+    public void SetFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
     {
         _PrimSetFieldDictValueByKey(path, fieldName, keyPath, value);
     }
@@ -576,7 +575,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Set a dictionary field value by key (generic version)
     /// </summary>
-    public void SetFieldDictValueByKey<T>(SdfPath path, TfToken fieldName, TfToken keyPath, T value)
+    public void SetFieldDictValueByKey<T>(ISdfPath path, TfToken fieldName, TfToken keyPath, T value)
     {
         SetFieldDictValueByKey(path, fieldName, keyPath, new VtValue(value));
     }
@@ -584,7 +583,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Set a field value at the given path
     /// </summary>
-    public void SetField(SdfPath path, TfToken fieldName, VtValue value)
+    public void SetField(ISdfPath path, TfToken fieldName, VtValue value)
     {
         _PrimSetField(path, fieldName, value);
     }
@@ -592,7 +591,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Set a field value at the given path (generic version)
     /// </summary>
-    public void SetField<T>(SdfPath path, TfToken fieldName, T value)
+    public void SetField<T>(ISdfPath path, TfToken fieldName, T value)
     {
         SetField(path, fieldName, new VtValue(value));
     }
@@ -610,7 +609,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Find or open a layer with the given identifier.
     /// </summary>
-    public static SdfLayer? FindOrOpen(string identifier, FileFormatArguments? args = null)
+    public static ISdfLayer? FindOrOpen(string identifier, FileFormatArguments? args = null)
     {
         if (string.IsNullOrEmpty(identifier))
             return null;
@@ -623,7 +622,7 @@ public class SdfLayer : ISdfLayer
         {
             // Find appropriate file format
             var fileFormat = ISdfFileFormat.FindByExtension(identifier);
-            if (fileFormat == null)
+            if (fileFormat is null)
             {
                 // Default to text format
                 fileFormat = SdfTextFileFormat.Instance;
@@ -655,7 +654,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Find an existing layer in the registry.
     /// </summary>
-    public static SdfLayer? Find(string identifier)
+    public static ISdfLayer? Find(string identifier)
     {
         if (string.IsNullOrEmpty(identifier))
             return null;
@@ -703,7 +702,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Get a prim spec by path.
     /// </summary>
-    public SdfPrimSpec? GetPrimSpec(SdfPath path)
+    public SdfPrimSpec? GetPrimSpec(ISdfPath path)
         => _primSpecs.TryGetValue(path, out var primSpec) ? primSpec : null;
 
     /// <summary>
@@ -720,12 +719,12 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Return true if this layer has a prim spec at the given path.
     /// </summary>
-    public bool HasPrimSpec(SdfPath path) => _primSpecs.ContainsKey(path);
+    public bool HasPrimSpec(ISdfPath path) => _primSpecs.ContainsKey(path);
 
     /// <summary>
     /// Remove a prim spec from this layer.
     /// </summary>
-    public bool RemovePrimSpec(SdfPath path)
+    public bool RemovePrimSpec(ISdfPath path)
     {
         if (_primSpecs.Remove(path))
         {
@@ -747,7 +746,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Traverse the scene description hierarchy rooted at path
     /// </summary>
-    public void Traverse(SdfPath path, Action<ISdfPath> func)
+    public void Traverse(ISdfPath path, Action<ISdfPath> func)
     {
         if (func == null)
             return;
@@ -860,7 +859,7 @@ public class SdfLayer : ISdfLayer
     /// </summary>
     /// <param name="path">The path to the spec.</param>
     /// <param name="fieldName">The name of the field to erase.</param>
-    public void EraseField(SdfPath path, TfToken fieldName)
+    public void EraseField(ISdfPath path, TfToken fieldName)
     {
         if (!PermissionToEdit())
             throw new InvalidOperationException($"Cannot erase {fieldName} on <{path}>. Layer @{GetIdentifier()}@ is not editable.");
@@ -893,7 +892,7 @@ public class SdfLayer : ISdfLayer
     /// <param name="path">The path to the spec.</param>
     /// <param name="fieldName">The name of the field.</param>
     /// <param name="keyPath">The key path within the dictionary to erase.</param>
-    public void EraseFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public void EraseFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         if (!PermissionToEdit())
             throw new InvalidOperationException($"Cannot erase {fieldName}:{keyPath} on <{path}>. Layer @{GetIdentifier()}@ is not editable.");
@@ -911,7 +910,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Gets the required field definition for a field if it exists.
     /// </summary>
-    private IFieldDefinition? _GetRequiredFieldDef(SdfPath path, TfToken fieldName, SdfSpecType? specType = null)
+    private IFieldDefinition? _GetRequiredFieldDef(ISdfPath path, TfToken fieldName, SdfSpecType? specType = null)
     {
         var schema = GetSchema();
         if (schema.IsRequiredFieldName(fieldName))
@@ -927,7 +926,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Core method for setting field values with change notification
     /// </summary>
-    private void _PrimSetField(SdfPath path, TfToken fieldName, VtValue value)
+    private void _PrimSetField(ISdfPath path, TfToken fieldName, VtValue value)
     {
         if (!PermissionToEdit())
             return;
@@ -954,7 +953,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Core method for setting dictionary field values with change notification
     /// </summary>
-    private void _PrimSetFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
+    private void _PrimSetFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
     {
         if (!PermissionToEdit())
             return;
@@ -1367,14 +1366,14 @@ public class SdfLayer : ISdfLayer
     public void ClearRelocates() { /* TODO */ }
     
     // Time samples
-    public int GetNumTimeSamplesForPath(SdfPath path) => 0;
+    public int GetNumTimeSamplesForPath(ISdfPath path) => 0;
     public ISet<double> ListAllTimeSamples() => new HashSet<double>();
-    public ISet<double> ListTimeSamplesForPath(SdfPath path) => new HashSet<double>();
-    public bool QueryTimeSample(SdfPath path, double time, out VtValue value) { value = new VtValue(); return false; }
-    public bool QueryTimeSample<T>(SdfPath path, double time, out T value) { value = default(T)!; return false; }
-    public void SetTimeSample(SdfPath path, double time, VtValue value) { /* TODO */ }
-    public void SetTimeSample<T>(SdfPath path, double time, T value) { /* TODO */ }
-    public void EraseTimeSample(SdfPath path, double time) { /* TODO */ }
+    public ISet<double> ListTimeSamplesForPath(ISdfPath path) => new HashSet<double>();
+    public bool QueryTimeSample(ISdfPath path, double time, out VtValue value) { value = new VtValue(); return false; }
+    public bool QueryTimeSample<T>(ISdfPath path, double time, out T value) { value = default(T)!; return false; }
+    public void SetTimeSample(ISdfPath path, double time, VtValue value) { /* TODO */ }
+    public void SetTimeSample<T>(ISdfPath path, double time, T value) { /* TODO */ }
+    public void EraseTimeSample(ISdfPath path, double time) { /* TODO */ }
     
     // Composition
     public ISet<string> GetCompositionAssetDependencies() => new HashSet<string>();

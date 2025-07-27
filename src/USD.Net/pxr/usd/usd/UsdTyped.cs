@@ -1,4 +1,3 @@
-using System;
 using Pxr.Base.Tf;
 using Pxr.Usd.Sdf;
 
@@ -83,9 +82,9 @@ public abstract class UsdTyped : UsdSchemaBase
     /// <param name="stage">The stage containing the prim</param>
     /// <param name="path">The path to the prim</param>
     /// <returns>The typed schema object, or invalid if not compatible</returns>
-    protected static T Get<T>(UsdStage stage, SdfPath path) where T : UsdTyped, new()
+    protected static T Get<T>(UsdStage stage, ISdfPath path) where T : UsdTyped, new()
     {
-        if (stage == null)
+        if (stage is null)
             return new T();
             
         var prim = stage.GetPrimAtPath(path);
@@ -109,9 +108,9 @@ public abstract class UsdTyped : UsdSchemaBase
     /// <param name="stage">The stage to create the prim on</param>
     /// <param name="path">The path for the new prim</param>
     /// <returns>The typed schema object for the new prim</returns>
-    protected static T Define<T>(UsdStage stage, SdfPath path) where T : UsdTyped, new()
+    protected static T Define<T>(UsdStage stage, ISdfPath path) where T : UsdTyped, new()
     {
-        if (stage == null)
+        if (stage is null)
             return new T();
             
         // Create a temporary instance to get the type name

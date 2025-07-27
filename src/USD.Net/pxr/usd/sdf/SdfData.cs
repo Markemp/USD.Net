@@ -397,7 +397,7 @@ public class SdfData : SdfAbstractData, ISdfData
     /// Static helper method for listing fields (used by SdfLayer)
     /// This matches the C++ SdfLayer::_ListFields implementation
     /// </summary>
-    public static List<TfToken> ListFields(ISdfSchemaBase schema, SdfData data, SdfPath path)
+    public static List<TfToken> ListFields(ISdfSchemaBase schema, ISdfData data, ISdfPath path)
     {
         // Get the list from the data implementation
         var dataList = data.List(path);

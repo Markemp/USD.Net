@@ -604,15 +604,11 @@ public class UsdSkelAnimation : UsdTyped
     
     #region Static Factory Methods
     
-    public static UsdSkelAnimation Get(UsdStage stage, SdfPath path)
-    {
-        return Get<UsdSkelAnimation>(stage, path);
-    }
+    public static UsdSkelAnimation Get(UsdStage stage, ISdfPath path)
+        => Get<UsdSkelAnimation>(stage, path);
     
-    public static UsdSkelAnimation Define(UsdStage stage, SdfPath path)
-    {
-        return Define<UsdSkelAnimation>(stage, path);
-    }
+    public static UsdSkelAnimation Define(UsdStage stage, ISdfPath path)
+        => Define<UsdSkelAnimation>(stage, path);
     
     #endregion
     

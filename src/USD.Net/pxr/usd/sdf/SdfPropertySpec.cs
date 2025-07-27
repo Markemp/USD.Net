@@ -1,5 +1,4 @@
 using Pxr.Base.Vt;
-using Pxr.Usd;
 
 namespace Pxr.Usd.Sdf;
 
@@ -9,8 +8,8 @@ namespace Pxr.Usd.Sdf;
 /// </summary>
 public class SdfPropertySpec
 {
-    private readonly SdfLayer _layer;
-    private readonly SdfPath _path;
+    private readonly ISdfLayer _layer;
+    private readonly ISdfPath _path;
     private readonly string _name;
     private string _typeName;
     private VtValue? _defaultValue;
@@ -33,7 +32,7 @@ public class SdfPropertySpec
     /// <summary>
     /// Create a property spec with layer, path, name, and type.
     /// </summary>
-    public SdfPropertySpec(SdfLayer layer, SdfPath path, string name, string typeName)
+    public SdfPropertySpec(ISdfLayer layer, ISdfPath path, string name, string typeName)
     {
         _layer = layer ?? throw new ArgumentNullException(nameof(layer));
         _path = path;
@@ -48,12 +47,12 @@ public class SdfPropertySpec
     /// <summary>
     /// Get the layer that owns this property spec.
     /// </summary>
-    public SdfLayer GetLayer() => _layer;
+    public ISdfLayer GetLayer() => _layer;
 
     /// <summary>
     /// Get the path of this property spec.
     /// </summary>
-    public SdfPath GetPath() => _path;
+    public ISdfPath GetPath() => _path;
 
     /// <summary>
     /// Get the name of this property.
@@ -111,10 +110,8 @@ public class SdfPropertySpec
     /// <summary>
     /// Create a new property spec in the given layer.
     /// </summary>
-    public static SdfPropertySpec New(SdfLayer layer, SdfPath path, string name, string typeName)
-    {
-        return new SdfPropertySpec(layer, path, name, typeName);
-    }
+    public static SdfPropertySpec New(ISdfLayer layer, ISdfPath path, string name, string typeName)
+        => new SdfPropertySpec(layer, path, name, typeName);
 
     #endregion
 

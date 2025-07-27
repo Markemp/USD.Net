@@ -1,12 +1,10 @@
-using System;
-
 namespace Pxr.Usd.Sdf;
 
 /// <summary>
 /// SdfAssetPath represents a path to an asset, potentially with additional resolution metadata.
 /// It can represent both absolute and relative paths, and supports asset resolution context.
 /// </summary>
-public readonly struct SdfAssetPath : IEquatable<SdfAssetPath>
+public readonly struct SdfAssetPath
 {
     private readonly string _assetPath;
     private readonly string? _resolvedPath;
@@ -37,14 +35,16 @@ public readonly struct SdfAssetPath : IEquatable<SdfAssetPath>
     /// </summary>
     public bool HasResolvedPath() => !string.IsNullOrEmpty(_resolvedPath);
 
-    public static implicit operator SdfAssetPath(string assetPath) => new(assetPath);
-    public static implicit operator string(SdfAssetPath assetPath) => assetPath.GetAssetPath();
+    //public static implicit operator SdfAssetPath(string assetPath) => new(assetPath);
+    //public static implicit operator string(SdfAssetPath assetPath) => assetPath.GetAssetPath();
 
-    public bool Equals(SdfAssetPath other)
-    {
-        return string.Equals(_assetPath, other._assetPath, StringComparison.Ordinal) &&
-               string.Equals(_resolvedPath, other._resolvedPath, StringComparison.Ordinal);
-    }
+    //public bool Equals(SdfAssetPath? other)
+    //{
+    //    if (other is null) return false;
+
+    //    return string.Equals(_assetPath, other._assetPath, StringComparison.Ordinal) &&
+    //           string.Equals(_resolvedPath, other._resolvedPath, StringComparison.Ordinal);
+    //}
 
     public override bool Equals(object? obj) => obj is SdfAssetPath other && Equals(other);
 
@@ -52,8 +52,8 @@ public readonly struct SdfAssetPath : IEquatable<SdfAssetPath>
 
     public override string ToString() => _assetPath;
 
-    public static bool operator ==(SdfAssetPath left, SdfAssetPath right) => left.Equals(right);
-    public static bool operator !=(SdfAssetPath left, SdfAssetPath right) => !left.Equals(right);
+    //public static bool operator ==(SdfAssetPath left, SdfAssetPath right) => left.Equals(right);
+    //public static bool operator !=(SdfAssetPath left, SdfAssetPath right) => !left.Equals(right);
 
     public static readonly SdfAssetPath Empty = new(string.Empty);
 }

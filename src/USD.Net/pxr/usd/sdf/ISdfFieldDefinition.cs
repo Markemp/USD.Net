@@ -1,7 +1,9 @@
 ﻿using Pxr.Base.Tf;
 using Pxr.Base.Vt;
+
 namespace Pxr.Usd.Sdf;
 
+// AIDEV-NOTE: Interface based on OpenUSD SdfSchemaBase - DO NOT MODIFY WITHOUT PERMISSION
 /// <summary>
 /// Interface defining various attributes for a field.
 /// </summary>
@@ -31,7 +33,45 @@ public interface ISdfFieldDefinition
     VtValue GetFallbackValue();
     
     /// <summary>
+    /// Return the metadata information for this field.
+    /// </summary>
+    /// <returns>Collection of metadata key-value pairs</returns>
+    IReadOnlyList<KeyValuePair<TfToken, object>> GetInfo();
+    
+    /// <summary>
     /// Return true if this field is provided by a plugin.
     /// </summary>
     bool IsPlugin();
+
+    /// <summary>
+    /// Validates if a given value passes the registered validator.
+    /// </summary>
+    /// <typeparam name="T">Type of value to validate</typeparam>
+    /// <param name="value">Value to validate</param>
+    /// <returns>Validation result</returns>
+    SdfAllowed IsValidValue<T>(T value);
+
+    /// <summary>
+    /// Validates if a given list value passes the registered list validator.
+    /// </summary>
+    /// <typeparam name="T">Type of value to validate</typeparam>
+    /// <param name="value">Value to validate</param>
+    /// <returns>Validation result</returns>
+    SdfAllowed IsValidListValue<T>(T value);
+
+    /// <summary>
+    /// Validates if a given map key passes the registered map key validator.
+    /// </summary>
+    /// <typeparam name="T">Type of key to validate</typeparam>
+    /// <param name="value">Key to validate</param>
+    /// <returns>Validation result</returns>
+    SdfAllowed IsValidMapKey<T>(T value);
+
+    /// <summary>
+    /// Validates if a given map value passes the registered map value validator.
+    /// </summary>
+    /// <typeparam name="T">Type of value to validate</typeparam>
+    /// <param name="value">Value to validate</param>
+    /// <returns>Validation result</returns>
+    SdfAllowed IsValidMapValue<T>(T value);
 }

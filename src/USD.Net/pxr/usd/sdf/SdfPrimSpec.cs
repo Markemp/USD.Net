@@ -36,8 +36,8 @@ namespace Pxr.Usd.Sdf;
 /// </remarks>
 public class SdfPrimSpec
 {
-    private readonly SdfLayer _layer;
-    private readonly SdfPath _path;
+    private readonly ISdfLayer _layer;
+    private readonly ISdfPath _path;
     private readonly Dictionary<string, object> _metadata = new();
     private readonly Dictionary<string, SdfPropertySpec> _properties = new();
     private readonly List<SdfPrimSpec> _children = new();
@@ -58,7 +58,7 @@ public class SdfPrimSpec
     /// <summary>
     /// Create a prim spec with the given layer and path.
     /// </summary>
-    public SdfPrimSpec(SdfLayer layer, SdfPath path, string specifier = "def")
+    public SdfPrimSpec(ISdfLayer layer, ISdfPath path, string specifier = "def")
     {
         _layer = layer ?? throw new ArgumentNullException(nameof(layer));
         _path = path;
@@ -72,12 +72,12 @@ public class SdfPrimSpec
     /// <summary>
     /// Get the layer that owns this prim spec.
     /// </summary>
-    public SdfLayer GetLayer() => _layer;
+    public ISdfLayer GetLayer() => _layer;
 
     /// <summary>
     /// Get the path of this prim spec.
     /// </summary>
-    public SdfPath GetPath() => _path;
+    public ISdfPath GetPath() => _path;
 
     /// <summary>
     /// Get the name of this prim spec (the final path component).
@@ -176,9 +176,7 @@ public class SdfPrimSpec
     /// Get all metadata keys for this prim spec.
     /// </summary>
     public IEnumerable<TfToken> GetMetadataKeys()
-    {
-        return _metadata.Keys.Select(key => new TfToken(key));
-    }
+        => _metadata.Keys.Select(key => new TfToken(key));
 
     #endregion
 

@@ -280,17 +280,17 @@ public interface ISdfLayer
     /// </summary>
     /// <param name="path">The path to query.</param>
     /// <returns>The spec type, or SdfSpecTypeUnknown if no spec exists at path.</returns>
-    SdfSpecType GetSpecType(SdfPath path);
+    SdfSpecType GetSpecType(ISdfPath path);
 
     /// <summary>
     /// Return whether a spec exists at path.
     /// </summary>
-    bool HasSpec(SdfPath path);
+    bool HasSpec(ISdfPath path);
 
     /// <summary>
     /// Return the names of all the fields that are set at path.
     /// </summary>
-    IReadOnlyList<TfToken> ListFields(SdfPath path);
+    IReadOnlyList<TfToken> ListFields(ISdfPath path);
 
     /// <summary>
     /// Return whether a value exists for the given path and fieldName.
@@ -299,17 +299,17 @@ public interface ISdfLayer
     /// <param name="fieldName">The name of the field.</param>
     /// <param name="value">Optional output parameter for the value if it exists.</param>
     /// <returns>true if a value exists, false otherwise.</returns>
-    bool HasField(SdfPath path, TfToken fieldName, out VtValue? value);
+    bool HasField(ISdfPath path, TfToken fieldName, out VtValue? value);
 
     /// <summary>
     /// Return whether a value exists for the given path and fieldName.
     /// </summary>
-    bool HasField(SdfPath path, TfToken fieldName);
+    bool HasField(ISdfPath path, TfToken fieldName);
 
     /// <summary>
     /// Returns true if the object has a non-empty value with name and type T.
     /// </summary>
-    bool HasField<T>(SdfPath path, TfToken fieldName, out T? value);
+    bool HasField<T>(ISdfPath path, TfToken fieldName, out T? value);
 
     /// <summary>
     /// Return whether a value exists for the given path, fieldName and keyPath.
@@ -319,23 +319,23 @@ public interface ISdfLayer
     /// <param name="keyPath">A ':'-separated path addressing an element in sub-dictionaries.</param>
     /// <param name="value">Optional output parameter for the value if it exists.</param>
     /// <returns>true if a value exists, false otherwise.</returns>
-    bool HasFieldDictKey(SdfPath path, TfToken fieldName, TfToken keyPath, out VtValue? value);
+    bool HasFieldDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath, out VtValue? value);
 
     /// <summary>
     /// Return whether a value exists for the given path, fieldName and keyPath.
     /// </summary>
-    bool HasFieldDictKey(SdfPath path, TfToken fieldName, TfToken keyPath);
+    bool HasFieldDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath);
 
     /// <summary>
     /// Returns true if the object has a non-empty value with name, keyPath and type T.
     /// </summary>
-    bool HasFieldDictKey<T>(SdfPath path, TfToken fieldName, TfToken keyPath, out T? value);
+    bool HasFieldDictKey<T>(ISdfPath path, TfToken fieldName, TfToken keyPath, out T? value);
 
     /// <summary>
     /// Return the value for the given path and fieldName.
     /// </summary>
     /// <returns>The field value, or an empty VtValue if none is set.</returns>
-    VtValue GetField(SdfPath path, TfToken fieldName);
+    VtValue GetField(ISdfPath path, TfToken fieldName);
 
     /// <summary>
     /// Return the value for the given path and fieldName.
@@ -346,46 +346,46 @@ public interface ISdfLayer
     /// For reference types, if no defaultValue is provided, default(T) will be null.
     /// For value types, if no defaultValue is provided, default(T) will be the zero value.
     /// </remarks>
-    T GetFieldAs<T>(SdfPath path, TfToken fieldName, T defaultValue = default!);
+    T GetFieldAs<T>(ISdfPath path, TfToken fieldName, T defaultValue = default!);
 
     /// <summary>
     /// Return the value for the given path and fieldName at keyPath.
     /// </summary>
     /// <param name="keyPath">A ':'-separated path addressing an element in sub-dictionaries.</param>
     /// <returns>The field value, or an empty VtValue if none is set.</returns>
-    VtValue GetFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath);
+    VtValue GetFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath);
 
     /// <summary>
     /// Set the value of the given path and fieldName.
     /// </summary>
-    void SetField(SdfPath path, TfToken fieldName, VtValue value);
+    void SetField(ISdfPath path, TfToken fieldName, VtValue value);
 
     /// <summary>
     /// Set the value of the given path and fieldName.
     /// </summary>
-    void SetField<T>(SdfPath path, TfToken fieldName, T value);
+    void SetField<T>(ISdfPath path, TfToken fieldName, T value);
 
     /// <summary>
     /// Set the value of the given path and fieldName at keyPath.
     /// </summary>
     /// <param name="keyPath">A ':'-separated path addressing an element in sub-dictionaries.</param>
-    void SetFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, VtValue value);
+    void SetFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath, VtValue value);
 
     /// <summary>
     /// Set the value of the given path and fieldName at keyPath.
     /// </summary>
-    void SetFieldDictValueByKey<T>(SdfPath path, TfToken fieldName, TfToken keyPath, T value);
+    void SetFieldDictValueByKey<T>(ISdfPath path, TfToken fieldName, TfToken keyPath, T value);
 
     /// <summary>
     /// Remove the field at path and fieldName, if one exists.
     /// </summary>
-    void EraseField(SdfPath path, TfToken fieldName);
+    void EraseField(ISdfPath path, TfToken fieldName);
 
     /// <summary>
     /// Remove the field at path, fieldName and keyPath, if one exists.
     /// </summary>
     /// <param name="keyPath">A ':'-separated path addressing an element in sub-dictionaries.</param>
-    void EraseFieldDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath);
+    void EraseFieldDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath);
 
     #endregion
 
@@ -396,7 +396,7 @@ public interface ISdfLayer
     /// </summary>
     /// <param name="path">The root path to begin traversal.</param>
     /// <param name="func">The function to call for each spec.</param>
-    void Traverse(SdfPath path, Action<ISdfPath> func);
+    void Traverse(ISdfPath path, Action<ISdfPath> func);
 
     #endregion
 
@@ -859,7 +859,7 @@ public interface ISdfLayer
     /// <summary>
     /// Returns the number of time sample times for a given path and field.
     /// </summary>
-    int GetNumTimeSamplesForPath(SdfPath path);
+    int GetNumTimeSamplesForPath(ISdfPath path);
 
     /// <summary>
     /// Returns all the time sample times for a given path and field.
@@ -869,32 +869,32 @@ public interface ISdfLayer
     /// <summary>
     /// Returns all the time sample times for a given path and field.
     /// </summary>
-    ISet<double> ListTimeSamplesForPath(SdfPath path);
+    ISet<double> ListTimeSamplesForPath(ISdfPath path);
 
     /// <summary>
     /// Queries the time sample value at the specified path and time.
     /// </summary>
-    bool QueryTimeSample(SdfPath path, double time, out VtValue value);
+    bool QueryTimeSample(ISdfPath path, double time, out VtValue value);
 
     /// <summary>
     /// Queries the time sample value at the specified path and time.
     /// </summary>
-    bool QueryTimeSample<T>(SdfPath path, double time, out T value);
+    bool QueryTimeSample<T>(ISdfPath path, double time, out T value);
 
     /// <summary>
     /// Sets a time sample value.
     /// </summary>
-    void SetTimeSample(SdfPath path, double time, VtValue value);
+    void SetTimeSample(ISdfPath path, double time, VtValue value);
 
     /// <summary>
     /// Sets a time sample value.
     /// </summary>
-    void SetTimeSample<T>(SdfPath path, double time, T value);
+    void SetTimeSample<T>(ISdfPath path, double time, T value);
 
     /// <summary>
     /// Removes a time sample at the given time.
     /// </summary>
-    void EraseTimeSample(SdfPath path, double time);
+    void EraseTimeSample(ISdfPath path, double time);
 
     #endregion
 

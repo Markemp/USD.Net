@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
-using Pxr.Usd;
-using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd.UsdGeom;
 
@@ -121,9 +117,8 @@ public abstract class UsdGeomBoundable : UsdGeomXformable
     {
         var extentAttr = GetExtentAttr();
         if (extentAttr.IsValid())
-        {
             return extentAttr.Clear();
-        }
+        
         return true;
     }
     

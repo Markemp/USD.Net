@@ -331,7 +331,7 @@ public readonly struct SdfPath : ISdfPath
     /// <summary>
     /// Append a child path component.
     /// </summary>
-    public SdfPath AppendChild(string childName)
+    public ISdfPath AppendChild(string childName)
     {
         if (string.IsNullOrEmpty(childName))
             throw new ArgumentException("Child name cannot be null or empty", nameof(childName));
@@ -346,7 +346,7 @@ public readonly struct SdfPath : ISdfPath
     /// <summary>
     /// Append a property name to create a property path.
     /// </summary>
-    public SdfPath AppendProperty(string propertyName)
+    public ISdfPath AppendProperty(string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
             throw new ArgumentException("Property name cannot be null or empty", nameof(propertyName));

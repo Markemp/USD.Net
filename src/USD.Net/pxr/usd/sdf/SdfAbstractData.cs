@@ -12,10 +12,10 @@ public abstract class SdfAbstractDataSpecVisitor
     }
 }
 
-public abstract class SdfAbstractDataValue
-{
-    public abstract bool StoreValue(VtValue value);
-}
+//public abstract class SdfAbstractDataValue
+//{
+//    public abstract bool StoreValue(VtValue value);
+//}
 
 public abstract class SdfAbstractData : ISdfAbstractData
 {

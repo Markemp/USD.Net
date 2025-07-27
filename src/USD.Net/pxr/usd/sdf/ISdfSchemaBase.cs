@@ -18,7 +18,7 @@ public interface ISdfSchemaBase
     /// </summary>
     /// <param name="fieldKey">The field key to look up</param>
     /// <returns>Field definition or null if not found</returns>
-    IFieldDefinition? GetFieldDefinition(TfToken fieldKey);
+    ISdfFieldDefinition? GetFieldDefinition(TfToken fieldKey);
 
     /// <summary>
     /// Returns the spec definition for the given spec type.
@@ -26,7 +26,7 @@ public interface ISdfSchemaBase
     /// </summary>
     /// <param name="specType">The spec type to look up</param>
     /// <returns>Spec definition or null if not found</returns>
-    ISpecDefinition? GetSpecDefinition(SdfSpecType specType);
+    ISdfSpecDefinition? GetSpecDefinition(SdfSpecType specType);
 
     /// <summary>
     /// Return whether the specified field has been registered.
@@ -160,125 +160,4 @@ public interface ISdfSchemaBase
     /// <param name="typeName">Type name to find or create</param>
     /// <returns>Value type name</returns>
     SdfValueTypeName FindOrCreateType(TfToken typeName);
-}
-
-/// <summary>
-/// Interface for class defining various attributes for a field.
-/// </summary>
-public interface IFieldDefinition
-{
-    /// <summary>
-    /// Gets the name of the field.
-    /// </summary>
-    TfToken Name { get; }
-
-    /// <summary>
-    /// Gets the fallback value for the field.
-    /// </summary>
-    VtValue FallbackValue { get; }
-
-    /// <summary>
-    /// Gets additional field information.
-    /// </summary>
-    IReadOnlyList<KeyValuePair<TfToken, object>> Info { get; }
-
-    /// <summary>
-    /// Gets whether this is a plugin field.
-    /// </summary>
-    bool IsPlugin { get; }
-
-    /// <summary>
-    /// Gets whether this field is read-only.
-    /// </summary>
-    bool IsReadOnly { get; }
-
-    /// <summary>
-    /// Gets whether this field holds children.
-    /// </summary>
-    bool HoldsChildren { get; }
-
-    /// <summary>
-    /// Validates if a given value passes the registered validator.
-    /// </summary>
-    /// <typeparam name="T">Type of value to validate</typeparam>
-    /// <param name="value">Value to validate</param>
-    /// <returns>Validation result</returns>
-    SdfAllowed IsValidValue<T>(T value);
-
-    /// <summary>
-    /// Validates if a given list value passes the registered list validator.
-    /// </summary>
-    /// <typeparam name="T">Type of value to validate</typeparam>
-    /// <param name="value">Value to validate</param>
-    /// <returns>Validation result</returns>
-    SdfAllowed IsValidListValue<T>(T value);
-
-    /// <summary>
-    /// Validates if a given map key passes the registered map key validator.
-    /// </summary>
-    /// <typeparam name="T">Type of key to validate</typeparam>
-    /// <param name="value">Key to validate</param>
-    /// <returns>Validation result</returns>
-    SdfAllowed IsValidMapKey<T>(T value);
-
-    /// <summary>
-    /// Validates if a given map value passes the registered map value validator.
-    /// </summary>
-    /// <typeparam name="T">Type of value to validate</typeparam>
-    /// <param name="value">Value to validate</param>
-    /// <returns>Validation result</returns>
-    SdfAllowed IsValidMapValue<T>(T value);
-}
-
-/// <summary>
-/// Interface for class representing fields and other information for a spec type.
-/// </summary>
-public interface ISpecDefinition
-{
-    /// <summary>
-    /// Returns all fields for this spec.
-    /// </summary>
-    /// <returns>Collection of field tokens</returns>
-    IReadOnlyList<TfToken> GetFields();
-
-    /// <summary>
-    /// Returns all value fields marked as required for this spec.
-    /// </summary>
-    IReadOnlyList<TfToken> RequiredFields { get; }
-
-    /// <summary>
-    /// Returns all value fields marked as metadata for this spec.
-    /// </summary>
-    /// <returns>Collection of metadata field tokens</returns>
-    IReadOnlyList<TfToken> GetMetadataFields();
-
-    /// <summary>
-    /// Returns whether the given field is valid for this spec.
-    /// </summary>
-    /// <param name="name">Field name to check</param>
-    /// <returns>True if field is valid</returns>
-    bool IsValidField(TfToken name);
-
-    /// <summary>
-    /// Returns whether the given field is metadata for this spec.
-    /// </summary>
-    /// <param name="name">Field name to check</param>
-    /// <returns>True if field is metadata</returns>
-    bool IsMetadataField(TfToken name);
-
-    /// <summary>
-    /// Returns the display group for this metadata field.
-    /// Returns the empty token if this field is not a metadata field or if this
-    /// metadata field has no display group.
-    /// </summary>
-    /// <param name="name">Field name to get display group for</param>
-    /// <returns>Display group token or empty token</returns>
-    TfToken GetMetadataFieldDisplayGroup(TfToken name);
-
-    /// <summary>
-    /// Returns whether the given field is required for this spec.
-    /// </summary>
-    /// <param name="name">Field name to check</param>
-    /// <returns>True if field is required</returns>
-    bool IsRequiredField(TfToken name);
 }

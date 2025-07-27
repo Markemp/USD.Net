@@ -6,9 +6,9 @@ namespace Pxr.Usd.Sdf;
 /// <summary>
 /// Base class for all Sdf spec classes.
 /// </summary>
-public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
+public abstract class SdfSpec : ISdfSpec
 {
-    private Sdf_Identity? _id;
+    private ISdfIdentity? _id;
 
     #region Construction
 
@@ -23,7 +23,7 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     /// <summary>
     /// Construct a spec with the given identity.
     /// </summary>
-    protected SdfSpec(Sdf_Identity identity)
+    protected SdfSpec(ISdfIdentity identity)
     {
         _id = identity ?? throw new ArgumentNullException(nameof(identity));
     }
@@ -31,12 +31,12 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     /// <summary>
     /// Construct a spec with the given layer and path.
     /// </summary>
-    protected SdfSpec(SdfLayer layer, SdfPath path)
+    protected SdfSpec(ISdfLayer layer, ISdfPath path)
     {
         if (layer is null)
             _id = null;
         else
-            _id = new Sdf_Identity(layer, path);
+            _id = new SdfIdentity(layer, path);
     }
 
     #endregion
@@ -90,12 +90,12 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     /// <summary>
     /// Returns the layer that this object belongs to.
     /// </summary>
-    public SdfLayer? GetLayer() => _id?.GetLayer();
+    public ISdfLayer? GetLayer() => _id?.GetLayer();
 
     /// <summary>
     /// Returns the scene path of this object.
     /// </summary>
-    public SdfPath GetPath() => _id?.GetPath() ?? SdfPath.EmptyPath();
+    public ISdfPath GetPath() => _id?.GetPath() ?? SdfPath.EmptyPath();
 
     /// <summary>
     /// Returns whether this object's layer can be edited.
@@ -121,7 +121,7 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     public List<TfToken> ListFields()
     {
         if (_id is null)
-            return new List<TfToken>();
+            return [];
 
         var layer = GetLayer();
         return layer?.ListFields(_id.GetPath()) ?? new List<TfToken>();
@@ -382,12 +382,10 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
         var fieldDef = schema.GetFieldDefinition(key);
 
         // A field without a definition may still exist as an unknown field.
-        if (fieldDef != null)
+        if (fieldDef is not null)
         {
             if (!CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "clear"))
-            {
                 return;
-            }
         }
 
         // TODO: Implement SdfChangeBlock equivalent
@@ -497,7 +495,7 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     /// <summary>
     /// Move this spec from oldPath to newPath.
     /// </summary>
-    protected bool MoveSpec(SdfPath oldPath, SdfPath newPath)
+    protected bool MoveSpec(ISdfPath oldPath, ISdfPath newPath)
     {
         var layer = GetLayer();
         return layer?._MoveSpec(oldPath, newPath) ?? false;
@@ -506,7 +504,7 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
     /// <summary>
     /// Delete the spec at the given path.
     /// </summary>
-    protected static bool DeleteSpec(SdfLayer layer, SdfPath path)
+    protected static bool DeleteSpec(ISdfLayer layer, ISdfPath path)
     {
         return layer._DeleteSpec(path);
     }
@@ -547,7 +545,7 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
             return 0;
 
         // Compare by identity
-        return Comparer<Sdf_Identity?>.Default.Compare(_id, other._id);
+        return Comparer<ISdfIdentity?>.Default.Compare(_id, other._id);
     }
 
     /// <summary>
@@ -627,80 +625,30 @@ public abstract class SdfSpec : IEquatable<SdfSpec>, IComparable<SdfSpec>
         return $"{GetType().Name}({GetPath()})";
     }
 
+    IReadOnlyList<TfToken> ISdfSpec.ListInfoKeys()
+    {
+        return ListInfoKeys();
+    }
+
+    IReadOnlyList<TfToken> ISdfSpec.GetMetaDataInfoKeys()
+    {
+        return GetMetaDataInfoKeys();
+    }
+
+    IReadOnlyList<TfToken> ISdfSpec.ListFields()
+    {
+        return ListFields();
+    }
+
+    public bool Equals(ISdfSpec? other)
+    {
+        throw new NotImplementedException();
+    }
+
+    public int CompareTo(ISdfSpec? other)
+    {
+        throw new NotImplementedException();
+    }
+
     #endregion
-}
-
-/// <summary>
-/// Identity class for specs - tracks layer and path.
-/// </summary>
-public class Sdf_Identity : IEquatable<Sdf_Identity>, IComparable<Sdf_Identity>
-{
-    private readonly WeakReference<SdfLayer> _layerRef;
-    private readonly SdfPath _path;
-
-    public Sdf_Identity(SdfLayer layer, SdfPath path)
-    {
-        _layerRef = new WeakReference<SdfLayer>(layer ?? throw new ArgumentNullException(nameof(layer)));
-        _path = path;
-    }
-
-    public SdfLayer? GetLayer()
-    {
-        _layerRef.TryGetTarget(out var layer);
-        return layer;
-    }
-
-    public SdfPath GetPath()
-    {
-        return _path;
-    }
-
-    public bool Equals(Sdf_Identity? other)
-    {
-        if (ReferenceEquals(other, null))
-            return false;
-        if (ReferenceEquals(this, other))
-            return true;
-
-        return _path.Equals(other._path) &&
-               ReferenceEquals(GetLayer(), other.GetLayer());
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as Sdf_Identity);
-    }
-
-    public int CompareTo(Sdf_Identity? other)
-    {
-        if (ReferenceEquals(other, null))
-            return 1;
-        if (ReferenceEquals(this, other))
-            return 0;
-
-        // First compare layers by identity
-        var thisLayer = GetLayer();
-        var otherLayer = other.GetLayer();
-
-        if (thisLayer == null && otherLayer == null)
-            return _path.CompareTo(other._path);
-        if (thisLayer == null)
-            return -1;
-        if (otherLayer == null)
-            return 1;
-
-        // Compare layer references (this is a simplification)
-        var layerComparison = thisLayer.GetHashCode().CompareTo(otherLayer.GetHashCode());
-        if (layerComparison != 0)
-            return layerComparison;
-
-        return _path.CompareTo(other._path);
-    }
-
-    public override int GetHashCode()
-    {
-        var layer = GetLayer();
-        var layerHash = layer?.GetHashCode() ?? 0;
-        return HashCode.Combine(layerHash, _path.GetHashCode());
-    }
 }

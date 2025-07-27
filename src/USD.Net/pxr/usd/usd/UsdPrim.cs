@@ -24,7 +24,7 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Create a prim with stage and path.
     /// </summary>
-    public UsdPrim(UsdStage stage, SdfPath path) : base(stage, path)
+    public UsdPrim(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
     

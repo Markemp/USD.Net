@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Pxr.Base.Tf;
-using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -13,7 +9,7 @@ namespace Pxr.Usd;
 /// </summary>
 public abstract class UsdProperty : UsdObject
 {
-    private readonly Dictionary<string, object> _metadata = new();
+    private readonly Dictionary<string, object> _metadata = [];
     private bool _isCustom;
     private string _displayGroup = string.Empty;
 
@@ -29,7 +25,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Create a property with stage and path.
     /// </summary>
-    protected UsdProperty(UsdStage stage, SdfPath path) : base(stage, path)
+    protected UsdProperty(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
 
@@ -40,10 +36,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Return true if this property is defined (valid and authored).
     /// </summary>
-    public virtual bool IsDefined()
-    {
-        return IsValid() && IsAuthored();
-    }
+    public virtual bool IsDefined() => IsValid() && IsAuthored();
 
     /// <summary>
     /// Return true if this property has authored opinions.
@@ -70,10 +63,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Return true if this is a custom property.
     /// </summary>
-    public virtual bool IsCustom()
-    {
-        return _isCustom;
-    }
+    public virtual bool IsCustom() => _isCustom;
 
     /// <summary>
     /// Set whether this property is custom.

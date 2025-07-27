@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Pxr.Base.Tf;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -12,8 +8,8 @@ namespace Pxr.Usd;
 /// </summary>
 public class UsdRelationship : UsdProperty
 {
-    private readonly List<SdfPath> _targets = new();
-    private readonly List<SdfPath> _explicitTargets = new();
+    private readonly List<ISdfPath> _targets = new();
+    private readonly List<ISdfPath> _explicitTargets = new();
 
     #region Construction
 
@@ -27,7 +23,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Create a relationship with stage and path.
     /// </summary>
-    public UsdRelationship(UsdStage stage, SdfPath path) : base(stage, path)
+    public UsdRelationship(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
 
@@ -38,7 +34,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Add a target path to this relationship.
     /// </summary>
-    public virtual bool AddTarget(SdfPath target, UsdListPosition position = UsdListPosition.BackOfPrependList)
+    public virtual bool AddTarget(ISdfPath target, UsdListPosition position = UsdListPosition.BackOfPrependList)
     {
         if (target.IsEmpty())
             return false;
@@ -75,7 +71,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Remove a target from this relationship.
     /// </summary>
-    public virtual bool RemoveTarget(SdfPath target)
+    public virtual bool RemoveTarget(ISdfPath target)
     {
         if (target.IsEmpty())
             return false;
@@ -86,9 +82,9 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Explicitly set all targets for this relationship, replacing any existing targets.
     /// </summary>
-    public virtual bool SetTargets(IEnumerable<SdfPath> targets)
+    public virtual bool SetTargets(IEnumerable<ISdfPath> targets)
     {
-        if (targets == null)
+        if (targets is null)
             return false;
 
         var validTargets = targets.Where(IsValidTarget).ToList();
@@ -114,18 +110,12 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Get the composed targets for this relationship.
     /// </summary>
-    public virtual SdfPath[] GetTargets()
-    {
-        return _targets.ToArray();
-    }
+    public virtual ISdfPath[] GetTargets() => _targets.ToArray();
 
     /// <summary>
     /// Return true if this relationship has any targets.
     /// </summary>
-    public virtual bool HasTargets()
-    {
-        return _targets.Count > 0;
-    }
+    public virtual bool HasTargets() => _targets.Count > 0;
 
     #endregion
 
@@ -134,7 +124,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Return true if the given path is a valid target for this relationship.
     /// </summary>
-    public virtual bool IsValidTarget(SdfPath target)
+    public virtual bool IsValidTarget(ISdfPath target)
     {
         if (target.IsEmpty())
             return false;
@@ -154,10 +144,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Return true if all current targets are valid.
     /// </summary>
-    public virtual bool HasValidTargets()
-    {
-        return _targets.All(IsValidTarget);
-    }
+    public virtual bool HasValidTargets() => _targets.All(IsValidTarget);
 
     #endregion
 
@@ -166,10 +153,10 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Resolve ultimate targets by following relationship forwarding chains.
     /// </summary>
-    public virtual SdfPath[] GetForwardedTargets()
+    public virtual ISdfPath[] GetForwardedTargets()
     {
-        var forwardedTargets = new List<SdfPath>();
-        var visited = new HashSet<SdfPath>();
+        var forwardedTargets = new List<ISdfPath>();
+        var visited = new HashSet<ISdfPath>();
 
         foreach (var target in _targets)
         {
@@ -182,7 +169,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Recursively resolve a forwarded target.
     /// </summary>
-    private void ResolveForwardedTarget(SdfPath target, List<SdfPath> results, HashSet<SdfPath> visited)
+    private void ResolveForwardedTarget(ISdfPath target, List<ISdfPath> results, HashSet<ISdfPath> visited)
     {
         // Prevent infinite loops
         if (visited.Contains(target))
@@ -236,7 +223,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Return true if this relationship targets the given path.
     /// </summary>
-    public virtual bool HasTarget(SdfPath target)
+    public virtual bool HasTarget(ISdfPath target)
     {
         return _targets.Contains(target);
     }
@@ -252,7 +239,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Get targets filtered by a predicate.
     /// </summary>
-    public virtual SdfPath[] GetTargets(Func<SdfPath, bool> predicate)
+    public virtual ISdfPath[] GetTargets(Func<ISdfPath, bool> predicate)
     {
         return _targets.Where(predicate).ToArray();
     }
@@ -260,7 +247,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Get all prim targets (excluding attribute/relationship targets).
     /// </summary>
-    public virtual SdfPath[] GetPrimTargets()
+    public virtual ISdfPath[] GetPrimTargets()
     {
         return _targets.Where(path => path.IsPrimPath()).ToArray();
     }
@@ -268,7 +255,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Get all property targets (attribute and relationship targets).
     /// </summary>
-    public virtual SdfPath[] GetPropertyTargets()
+    public virtual ISdfPath[] GetPropertyTargets()
     {
         return _targets.Where(path => path.IsPropertyPath()).ToArray();
     }
@@ -280,7 +267,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Replace a target in the relationship.
     /// </summary>
-    public virtual bool ReplaceTarget(SdfPath oldTarget, SdfPath newTarget)
+    public virtual bool ReplaceTarget(ISdfPath oldTarget, ISdfPath newTarget)
     {
         if (oldTarget.IsEmpty() || newTarget.IsEmpty())
             return false;
@@ -299,7 +286,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Insert a target at a specific index.
     /// </summary>
-    public virtual bool InsertTarget(int index, SdfPath target)
+    public virtual bool InsertTarget(int index, ISdfPath target)
     {
         if (target.IsEmpty() || !IsValidTarget(target))
             return false;
@@ -338,7 +325,7 @@ public class UsdRelationship : UsdProperty
     /// <summary>
     /// Get the explicitly authored targets (before list composition).
     /// </summary>
-    public virtual SdfPath[] GetAuthoredTargets()
+    public virtual ISdfPath[] GetAuthoredTargets()
     {
         return _explicitTargets.ToArray();
     }

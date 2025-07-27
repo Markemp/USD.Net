@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Pxr.Base.Tf;
-using Pxr.Usd;
 using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
 
@@ -34,14 +30,10 @@ public class UsdSkelRoot : UsdGeomBoundable
     #region Static Factory Methods
     
     public static UsdSkelRoot Get(UsdStage stage, SdfPath path)
-    {
-        return Get<UsdSkelRoot>(stage, path);
-    }
+        => Get<UsdSkelRoot>(stage, path);
     
     public new static UsdSkelRoot Define(UsdStage stage, SdfPath path)
-    {
-        return Define<UsdSkelRoot>(stage, path);
-    }
+        => Define<UsdSkelRoot>(stage, path);
     
     #endregion
     
@@ -72,10 +64,7 @@ public class UsdSkelRoot : UsdGeomBoundable
     /// <summary>
     /// Check if the given prim has a SkelRoot at or above it in the hierarchy.
     /// </summary>
-    public static bool HasSkelRoot(UsdPrim prim)
-    {
-        return Find(prim).IsValid;
-    }
+    public static bool HasSkelRoot(UsdPrim prim) => Find(prim).IsValid;
     
     #endregion
     
@@ -95,9 +84,7 @@ public class UsdSkelRoot : UsdGeomBoundable
         foreach (var descendant in new UsdPrimRange(Prim))
         {
             if (descendant.IsA<UsdSkelSkeleton>())
-            {
                 skeletons.Add(new UsdSkelSkeleton(descendant));
-            }
         }
         
         return skeletons;
@@ -133,9 +120,7 @@ public class UsdSkelRoot : UsdGeomBoundable
             {
                 var bindingAPI = UsdSkelBindingAPI.Get(descendant);
                 if (bindingAPI.IsValid)
-                {
                     skinnedPrims.Add(descendant);
-                }
             }
         }
         
@@ -160,9 +145,7 @@ public class UsdSkelRoot : UsdGeomBoundable
         foreach (var descendant in new UsdPrimRange(Prim))
         {
             if (descendant.IsA<UsdSkelAnimation>())
-            {
                 animations.Add(new UsdSkelAnimation(descendant));
-            }
         }
         
         return animations;

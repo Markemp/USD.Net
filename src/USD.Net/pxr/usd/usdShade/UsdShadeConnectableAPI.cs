@@ -109,7 +109,7 @@ public readonly struct UsdShadeConnectableAPI : IEquatable<UsdShadeConnectableAP
         return outputs.ToArray();
     }
 
-    public static bool ConnectToSource(UsdAttribute shadingAttr, SdfPath source)
+    public static bool ConnectToSource(UsdAttribute shadingAttr, ISdfPath source)
     {
         if (!shadingAttr.IsValid() || source.IsEmpty())
             return false;
@@ -169,10 +169,10 @@ public readonly struct UsdShadeConnectableAPI : IEquatable<UsdShadeConnectableAP
         return DisconnectSource(shadingAttr);
     }
 
-    public static SdfPath[] GetConnectedSources(UsdAttribute shadingAttr)
+    public static ISdfPath[] GetConnectedSources(UsdAttribute shadingAttr)
     {
         if (!shadingAttr.IsValid())
-            return Array.Empty<SdfPath>();
+            return Array.Empty<ISdfPath>();
 
         return shadingAttr.GetConnections();
     }

@@ -1,6 +1,5 @@
 namespace Pxr.Usd.Sdf;
 
-using System;
 using System.Collections.Generic;
 using Pxr.Base.Tf;
 
@@ -9,37 +8,6 @@ using Pxr.Base.Tf;
 /// These are minimal implementations to allow compilation.
 /// TODO: Implement full functionality when needed.
 /// </summary>
-
-/// <summary>
-/// Represents an asset path with optional layer offset.
-/// </summary>
-public class SdfAssetPath
-{
-    public string Path { get; set; } = string.Empty;
-    public SdfLayerOffset? LayerOffset { get; set; }
-    
-    public SdfAssetPath() { }
-    public SdfAssetPath(string path) => Path = path;
-    
-    public bool IsEmpty() => string.IsNullOrEmpty(Path);
-}
-
-/// <summary>
-/// Layer offset for time-shifted composition.
-/// </summary>
-public struct SdfLayerOffset
-{
-    public double Offset { get; set; }
-    public double Scale { get; set; }
-    
-    public SdfLayerOffset(double offset = 0.0, double scale = 1.0)
-    {
-        Offset = offset;
-        Scale = scale;
-    }
-    
-    public bool IsIdentity() => Offset == 0.0 && Scale == 1.0;
-}
 
 /// <summary>
 /// Vector of prim spec handles.

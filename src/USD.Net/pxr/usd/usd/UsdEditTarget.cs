@@ -1,4 +1,3 @@
-using System;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -9,7 +8,7 @@ namespace Pxr.Usd;
 /// </summary>
 public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
 {
-    private readonly SdfLayer? _layer;
+    private readonly ISdfLayer? _layer;
     private readonly UsdPathMapping _mapping;
 
     #region Construction
@@ -26,14 +25,14 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
     /// <summary>
     /// Construct a UsdEditTarget with the specified layer.
     /// </summary>
-    public UsdEditTarget(SdfLayer? layer) : this(layer, UsdPathMapping.Identity())
+    public UsdEditTarget(ISdfLayer? layer) : this(layer, UsdPathMapping.Identity())
     {
     }
 
     /// <summary>
     /// Construct a UsdEditTarget with the specified layer and path mapping.
     /// </summary>
-    public UsdEditTarget(SdfLayer? layer, UsdPathMapping mapping)
+    public UsdEditTarget(ISdfLayer? layer, UsdPathMapping mapping)
     {
         _layer = layer;
         _mapping = mapping;
@@ -56,7 +55,7 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
     /// <summary>
     /// Get the layer that edits should be directed to.
     /// </summary>
-    public SdfLayer? GetLayer() => _layer;
+    public ISdfLayer? GetLayer() => _layer;
 
     /// <summary>
     /// Get the path mapping function for this edit target.
@@ -129,7 +128,7 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
     /// <summary>
     /// Create an edit target for the session layer with an identity mapping.
     /// </summary>
-    public static UsdEditTarget ForSessionLayer(SdfLayer? sessionLayer)
+    public static UsdEditTarget ForSessionLayer(ISdfLayer? sessionLayer)
     {
         return new UsdEditTarget(sessionLayer, UsdPathMapping.Identity());
     }
@@ -137,7 +136,7 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
     /// <summary>
     /// Create an edit target for a local layer with an identity mapping.
     /// </summary>
-    public static UsdEditTarget ForLocalLayer(SdfLayer? layer)
+    public static UsdEditTarget ForLocalLayer(ISdfLayer? layer)
     {
         return new UsdEditTarget(layer, UsdPathMapping.Identity());
     }
@@ -146,7 +145,7 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
     /// Create an edit target for local direct variant editing.
     /// This is for editing variant selections directly in the local layer stack.
     /// </summary>
-    public static UsdEditTarget ForLocalDirectVariant(SdfLayer? layer, SdfPath variantSelectionPath)
+    public static UsdEditTarget ForLocalDirectVariant(ISdfLayer? layer, ISdfPath variantSelectionPath)
     {
         // Create a mapping that handles variant selections
         var mapping = UsdPathMapping.CreateVariantMapping(variantSelectionPath);
@@ -216,10 +215,10 @@ public readonly struct UsdEditTarget : IEquatable<UsdEditTarget>
 /// </summary>
 public readonly struct UsdPathMapping : IEquatable<UsdPathMapping>
 {
-    private readonly SdfPath _variantSelectionPath;
+    private readonly ISdfPath _variantSelectionPath;
     private readonly bool _isIdentity;
 
-    private UsdPathMapping(bool isIdentity, SdfPath variantSelectionPath = default)
+    private UsdPathMapping(bool isIdentity, ISdfPath variantSelectionPath = default!)
     {
         _isIdentity = isIdentity;
         _variantSelectionPath = variantSelectionPath;
@@ -233,10 +232,8 @@ public readonly struct UsdPathMapping : IEquatable<UsdPathMapping>
     /// <summary>
     /// Create a variant mapping for the specified variant selection path.
     /// </summary>
-    public static UsdPathMapping CreateVariantMapping(SdfPath variantSelectionPath)
-    {
-        return new(false, variantSelectionPath);
-    }
+    public static UsdPathMapping CreateVariantMapping(ISdfPath variantSelectionPath)
+        => new(false, variantSelectionPath);
 
     /// <summary>
     /// Map a source path to a target path using this mapping.

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
 
@@ -14,7 +10,7 @@ namespace Pxr.Usd;
 public class UsdAttribute : UsdProperty
 {
     private readonly Dictionary<UsdTimeCode, VtValue> _timeSamples = new();
-    private readonly List<SdfPath> _connections = new();
+    private readonly List<ISdfPath> _connections = new();
     private VtValue? _defaultValue;
     private string _typeName = string.Empty;
     private UsdVariability _variability = UsdVariability.Varying;
@@ -33,14 +29,14 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Create an attribute with stage and path.
     /// </summary>
-    public UsdAttribute(UsdStage stage, SdfPath path) : base(stage, path)
+    public UsdAttribute(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
 
     /// <summary>
     /// Create an attribute with stage, path, and type.
     /// </summary>
-    public UsdAttribute(UsdStage stage, SdfPath path, string typeName) : base(stage, path)
+    public UsdAttribute(UsdStage stage, ISdfPath path, string typeName) : base(stage, path)
     {
         _typeName = typeName ?? string.Empty;
     }
@@ -52,10 +48,7 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Get the type name of this attribute.
     /// </summary>
-    public virtual string GetTypeName()
-    {
-        return _typeName;
-    }
+    public virtual string GetTypeName() => _typeName;
 
     /// <summary>
     /// Set the type name of this attribute.
@@ -69,10 +62,7 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Return true if this attribute has a type name.
     /// </summary>
-    public virtual bool HasTypeName()
-    {
-        return !string.IsNullOrEmpty(_typeName);
-    }
+    public virtual bool HasTypeName() => !string.IsNullOrEmpty(_typeName);
 
     #endregion
 
@@ -81,10 +71,7 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Get the variability of this attribute.
     /// </summary>
-    public virtual UsdVariability GetVariability()
-    {
-        return _variability;
-    }
+    public virtual UsdVariability GetVariability() => _variability;
 
     /// <summary>
     /// Set the variability of this attribute.
@@ -99,9 +86,7 @@ public class UsdAttribute : UsdProperty
     /// Return true if this attribute varies over time.
     /// </summary>
     public virtual bool ValueMightBeTimeVarying()
-    {
-        return _variability == UsdVariability.Varying && _timeSamples.Count > 1;
-    }
+        => _variability == UsdVariability.Varying && _timeSamples.Count > 1;
 
     #endregion
 
@@ -499,7 +484,7 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Add a connection to this attribute.
     /// </summary>
-    public virtual bool AddConnection(SdfPath sourcePath, UsdListPosition position = UsdListPosition.BackOfPrependList)
+    public virtual bool AddConnection(ISdfPath sourcePath, UsdListPosition position = UsdListPosition.BackOfPrependList)
     {
         if (!IsValid() || sourcePath.IsEmpty())
             return false;
@@ -535,18 +520,12 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Get all connections for this attribute.
     /// </summary>
-    public virtual SdfPath[] GetConnections()
-    {
-        return _connections.ToArray();
-    }
+    public virtual ISdfPath[] GetConnections() => _connections.ToArray();
 
     /// <summary>
     /// Return true if this attribute has connections.
     /// </summary>
-    public virtual bool HasConnections()
-    {
-        return _connections.Count > 0;
-    }
+    public virtual bool HasConnections() => _connections.Count > 0;
 
     /// <summary>
     /// Clear all connections for this attribute.

@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
-using Pxr.Usd;
 using Pxr.Usd.Sdf;
 using Pxr.Usd.UsdGeom;
 
@@ -244,7 +240,7 @@ public class UsdSkelSkeleton : UsdGeomBoundable
             return false;
             
         var rel = CreateAnimationSourceRel();
-        return rel.SetTargets(new[] { animation.Prim.GetPath() });
+        return rel.SetTargets([animation.Prim.GetPath()]);
     }
     
     #endregion
@@ -493,7 +489,7 @@ public class UsdSkelSkeleton : UsdGeomBoundable
         return Get<UsdSkelSkeleton>(stage, path);
     }
     
-    public new static UsdSkelSkeleton Define(UsdStage stage, SdfPath path)
+    public static UsdSkelSkeleton Define(UsdStage stage, ISdfPath path)
     {
         return Define<UsdSkelSkeleton>(stage, path);
     }

@@ -8,7 +8,7 @@ namespace Pxr.Usd;
 public abstract class UsdObject
 {
     private readonly UsdStage? _stage;
-    private readonly SdfPath _path;
+    private readonly ISdfPath _path;
 
     /// <summary>
     /// Protected constructor for USD objects.
@@ -20,7 +20,7 @@ public abstract class UsdObject
     /// <summary>
     /// Protected constructor for USD objects with stage and path.
     /// </summary>
-    protected UsdObject(UsdStage? stage, SdfPath path)
+    protected UsdObject(UsdStage? stage, ISdfPath path)
     {
         _stage = stage;
         _path = path;
@@ -39,7 +39,7 @@ public abstract class UsdObject
     /// <summary>
     /// Return the path to this object.
     /// </summary>
-    public virtual SdfPath GetPath() => _path;
+    public virtual ISdfPath GetPath() => _path;
 
     /// <summary>
     /// Return the name of this object.

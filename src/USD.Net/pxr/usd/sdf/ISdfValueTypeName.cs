@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 
+// AIDEV-NOTE: Interface based on OpenUSD SdfSchemaBase - DO NOT MODIFY WITHOUT PERMISSION
 /// <summary>
 /// Represents a value type name - an attribute's type name with associated metadata.
 /// 

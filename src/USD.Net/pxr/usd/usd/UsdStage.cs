@@ -12,11 +12,11 @@ namespace Pxr.Usd;
 /// </summary>
 public sealed class UsdStage
 {
-    private readonly SdfLayer _rootLayer;
-    private readonly SdfLayer? _sessionLayer;
-    private readonly List<SdfLayer> _layerStack = new();
+    private readonly ISdfLayer _rootLayer;
+    private readonly ISdfLayer? _sessionLayer;
+    private readonly List<ISdfLayer> _layerStack = new();
     private readonly ArResolverContext _resolverContext;
-    private readonly Dictionary<SdfPath, UsdPrim> _primIndex = new();
+    private readonly Dictionary<ISdfPath, UsdPrim> _primIndex = new();
     private UsdPrim? _defaultPrim;
     private UsdStageLoadRules? _loadRules;
     private UsdStagePopulationMask? _populationMask;
@@ -26,7 +26,7 @@ public sealed class UsdStage
     private double _framesPerSecond = 24.0;
     private UsdEditTarget _editTarget;
 
-    private UsdStage(SdfLayer rootLayer, SdfLayer? sessionLayer = null, ArResolverContext? resolverContext = null)
+    private UsdStage(ISdfLayer rootLayer, ISdfLayer? sessionLayer = null, ArResolverContext? resolverContext = null)
     {
         _rootLayer = rootLayer ?? throw new ArgumentNullException(nameof(rootLayer));
         _sessionLayer = sessionLayer;
@@ -91,17 +91,17 @@ public sealed class UsdStage
     /// <summary>
     /// Get the root layer for this stage.
     /// </summary>
-    public SdfLayer GetRootLayer() => _rootLayer;
+    public ISdfLayer GetRootLayer() => _rootLayer;
 
     /// <summary>
     /// Get the session layer for this stage, if any.
     /// </summary>
-    public SdfLayer? GetSessionLayer() => _sessionLayer;
+    public ISdfLayer? GetSessionLayer() => _sessionLayer;
 
     /// <summary>
     /// Get all layers used by this stage.
     /// </summary>
-    public IReadOnlyList<SdfLayer> GetLayerStack() => _layerStack.AsReadOnly();
+    public IReadOnlyList<ISdfLayer> GetLayerStack() => _layerStack.AsReadOnly();
 
     /// <summary>
     /// Get the resolver context for this stage.
@@ -176,7 +176,7 @@ public sealed class UsdStage
     /// <summary>
     /// Retrieve a prim at a specific path.
     /// </summary>
-    public UsdPrim GetPrimAtPath(SdfPath path)
+    public UsdPrim GetPrimAtPath(ISdfPath path)
     {
         if (path.IsEmpty())
             return new UsdPrim(); // Invalid prim
@@ -226,7 +226,7 @@ public sealed class UsdStage
     /// <summary>
     /// Define a new prim at the given path.
     /// </summary>
-    public UsdPrim DefinePrim(SdfPath path, TfToken? typeName = null)
+    public UsdPrim DefinePrim(ISdfPath path, TfToken? typeName = null)
     {
         if (path.IsEmpty() || !path.IsAbsolutePath())
             throw new ArgumentException("Path must be absolute and non-empty", nameof(path));
