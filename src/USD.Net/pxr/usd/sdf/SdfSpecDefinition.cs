@@ -1,6 +1,5 @@
 namespace Pxr.Usd.Sdf;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Pxr.Base.Tf;
@@ -8,7 +7,7 @@ using Pxr.Base.Tf;
 /// <summary>
 /// Concrete implementation of spec definition.
 /// </summary>
-internal class SdfSpecDefinition : ISpecDefinition
+internal class SdfSpecDefinition : ISdfSpecDefinition
 {
     // Field info tracking metadata and requirements
     private class FieldInfo
@@ -100,7 +99,7 @@ internal class SdfSpecDefinition : ISpecDefinition
         return this;
     }
     
-    public SdfSpecDefinition CopyFrom(ISpecDefinition other)
+    public SdfSpecDefinition CopyFrom(ISdfSpecDefinition other)
     {
         foreach (var field in other.GetFields())
         {

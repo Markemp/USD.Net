@@ -1,7 +1,6 @@
 namespace Pxr.Usd.Sdf;
 
 // AIDEV-NOTE: DO NOT MODIFY THIS FILE - Interface matches OpenUSD pxr/usd/sdf/data.h exactly
-
 /// <summary>
 /// SdfData provides concrete scene description data storage.
 /// 

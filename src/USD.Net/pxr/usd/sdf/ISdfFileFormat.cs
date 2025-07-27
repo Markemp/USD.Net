@@ -1,6 +1,5 @@
 namespace Pxr.Usd.Sdf;
 
-using System;
 using System.Collections.Generic;
 using Pxr.Base.Tf;
 

@@ -264,18 +264,18 @@ public sealed class UsdStage
     /// <summary>
     /// Ensure a prim exists at the given path, creating it if necessary.
     /// </summary>
-    public UsdPrim OverridePrim(SdfPath path) => DefinePrim(path);
+    public UsdPrim OverridePrim(ISdfPath path) => DefinePrim(path);
 
     /// <summary>
     /// Remove a prim at the given path.
     /// </summary>
-    public bool RemovePrim(SdfPath path)
+    public bool RemovePrim(ISdfPath path)
     {
         if (path.IsEmpty())
             return false;
 
         // Remove all descendant prims first
-        var toRemove = new List<SdfPath>();
+        var toRemove = new List<ISdfPath>();
         foreach (var kvp in _primIndex)
         {
             if (kvp.Key.HasPrefix(path))
@@ -326,41 +326,31 @@ public sealed class UsdStage
     /// Iterate through all prims on this stage.
     /// </summary>
     public IEnumerable<UsdPrim> Traverse()
-    {
-        return _primIndex.Values.Where(prim => prim.IsValid());
-    }
+        => _primIndex.Values.Where(prim => prim.IsValid());
 
     /// <summary>
     /// Iterate through prims with a custom predicate.
     /// </summary>
     public IEnumerable<UsdPrim> TraverseAll()
-    {
-        return _primIndex.Values;
-    }
+        => _primIndex.Values;
     
     /// <summary>
     /// Traverse the entire stage with default predicate (C# simplified).
     /// </summary>
     public UsdPrimRange TraverseRange()
-    {
-        return TraverseRange(UsdPrimPredicates.Default);
-    }
+        => TraverseRange(UsdPrimPredicates.Default);
     
     /// <summary>
     /// Traverse the entire stage with custom predicate (C# simplified).
     /// </summary>
     public UsdPrimRange TraverseRange(Func<UsdPrim, bool> predicate)
-    {
-        return new SimpleUsdPrimRange(TraverseAll().Where(predicate ?? UsdPrimPredicates.Default));
-    }
+        =>new SimpleUsdPrimRange(TraverseAll().Where(predicate ?? UsdPrimPredicates.Default));
     
     /// <summary>
     /// Traverse all prims in the stage (no filtering, C# simplified).
     /// </summary>
     public UsdPrimRange TraverseAllRange()
-    {
-        return new SimpleUsdPrimRange(TraverseAll().Where(UsdPrimPredicates.All));
-    }
+        => new SimpleUsdPrimRange(TraverseAll().Where(UsdPrimPredicates.All));
 
     #endregion
 

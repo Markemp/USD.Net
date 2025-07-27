@@ -11,16 +11,16 @@ using Pxr.Base.Vt;
 /// </summary>
 public class SdfSchemaBase : ISdfSchemaBase
 {
-    private readonly Dictionary<TfToken, IFieldDefinition> _fieldDefinitions = new();
-    private readonly Dictionary<SdfSpecType, ISpecDefinition> _specDefinitions = new();
+    private readonly Dictionary<TfToken, ISdfFieldDefinition> _fieldDefinitions = new();
+    private readonly Dictionary<SdfSpecType, ISdfSpecDefinition> _specDefinitions = new();
     private readonly HashSet<TfToken> _requiredFieldNames = new();
     private readonly List<SdfValueTypeName> _allTypes = new();
     private readonly Dictionary<TfToken, SdfValueTypeName> _typesByName = new();
 
-    public virtual IFieldDefinition? GetFieldDefinition(TfToken fieldKey)
+    public virtual ISdfFieldDefinition? GetFieldDefinition(TfToken fieldKey)
         => _fieldDefinitions.TryGetValue(fieldKey, out var definition) ? definition : null;
 
-    public virtual ISpecDefinition? GetSpecDefinition(SdfSpecType specType)
+    public virtual ISdfSpecDefinition? GetSpecDefinition(SdfSpecType specType)
         => _specDefinitions.TryGetValue(specType, out var definition) ? definition : null;
 
     public virtual bool IsRegistered(TfToken fieldKey, out VtValue? fallback)
@@ -38,7 +38,7 @@ public class SdfSchemaBase : ISdfSchemaBase
     public virtual bool HoldsChildren(TfToken fieldKey)
     {
         var definition = GetFieldDefinition(fieldKey);
-        return definition?.HoldsChildren ?? false;
+        return definition?.HoldsChildren() ?? false;
     }
 
     public virtual VtValue GetFallback(TfToken fieldKey)
@@ -130,12 +130,12 @@ public class SdfSchemaBase : ISdfSchemaBase
         return new SdfValueTypeName(typeName);
     }
 
-    protected virtual void RegisterFieldDefinition(TfToken fieldKey, IFieldDefinition definition)
+    protected virtual void RegisterFieldDefinition(TfToken fieldKey, ISdfFieldDefinition definition)
     {
         _fieldDefinitions[fieldKey] = definition;
     }
 
-    protected virtual void RegisterSpecDefinition(SdfSpecType specType, ISpecDefinition definition)
+    protected virtual void RegisterSpecDefinition(SdfSpecType specType, ISdfSpecDefinition definition)
     {
         _specDefinitions[specType] = definition;
         

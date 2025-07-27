@@ -5,22 +5,22 @@ namespace Pxr.Usd.Sdf;
 
 public class SdfData : SdfAbstractData, ISdfData
 {
-    private readonly Dictionary<SdfPath, SpecData> _data = [];
+    private readonly Dictionary<ISdfPath, SpecData> _data = [];
 
     public SdfData() : base() { }
 
     public override bool StreamsData() => false;
 
-    public override bool HasSpec(SdfPath path) => _data.ContainsKey(path);
+    public override bool HasSpec(ISdfPath path) => _data.ContainsKey(path);
 
-    public override void EraseSpec(SdfPath path)
+    public override void EraseSpec(ISdfPath path)
     {
         if (!_data.ContainsKey(path))
             return;
         _data.Remove(path);
     }
 
-    public override void MoveSpec(SdfPath oldPath, SdfPath newPath)
+    public override void MoveSpec(ISdfPath oldPath, ISdfPath newPath)
     {
         if (!_data.TryGetValue(oldPath, out var specData))
             return;
@@ -32,7 +32,7 @@ public class SdfData : SdfAbstractData, ISdfData
         _data.Remove(oldPath);
     }
 
-    public override SdfSpecType GetSpecType(SdfPath path)
+    public override SdfSpecType GetSpecType(ISdfPath path)
     {
         if (_data.TryGetValue(path, out var specData))
             return specData.SpecType;
@@ -40,7 +40,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return SdfSpecType.Unknown;
     }
 
-    public override void CreateSpec(SdfPath path, SdfSpecType specType)
+    public override void CreateSpec(ISdfPath path, SdfSpecType specType)
     {
         if (specType == SdfSpecType.Unknown)
             return;
@@ -57,9 +57,9 @@ public class SdfData : SdfAbstractData, ISdfData
         }
     }
 
-    public bool Has(SdfPath path, TfToken field) => _GetFieldValue(path, field) is not null;
+    public bool Has(ISdfPath path, TfToken field) => _GetFieldValue(path, field) is not null;
 
-    public override bool Has(SdfPath path, TfToken field, SdfAbstractDataValue? value = null)
+    public override bool Has(ISdfPath path, TfToken field, SdfAbstractDataValue? value = null)
     {
         var fieldValue = _GetFieldValue(path, field);
         if (fieldValue is not null)
@@ -72,7 +72,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool Has(SdfPath path, TfToken field, VtValue? value = null)
+    public override bool Has(ISdfPath path, TfToken field, VtValue? value = null)
     {
         var fieldValue = _GetFieldValue(path, field);
         if (fieldValue is not null)
@@ -85,7 +85,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool HasSpecAndField(SdfPath path, TfToken fieldName, SdfAbstractDataValue? value, out SdfSpecType specType)
+    public override bool HasSpecAndField(ISdfPath path, TfToken fieldName, SdfAbstractDataValue? value, out SdfSpecType specType)
     {
         var fieldValue = _GetSpecTypeAndFieldValue(path, fieldName, out specType);
         if (fieldValue is not null)
@@ -94,7 +94,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool HasSpecAndField(SdfPath path, TfToken fieldName, VtValue? value, out SdfSpecType specType)
+    public override bool HasSpecAndField(ISdfPath path, TfToken fieldName, VtValue? value, out SdfSpecType specType)
     {
         var fieldValue = _GetSpecTypeAndFieldValue(path, fieldName, out specType);
         if (fieldValue is not null)
@@ -107,7 +107,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    private VtValue? _GetSpecTypeAndFieldValue(SdfPath path, TfToken field, out SdfSpecType specType)
+    private VtValue? _GetSpecTypeAndFieldValue(ISdfPath path, TfToken field, out SdfSpecType specType)
     {
         if (_data.TryGetValue(path, out var spec))
         {
@@ -119,7 +119,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return null;
     }
 
-    private VtValue? _GetFieldValue(SdfPath path, TfToken field)
+    private VtValue? _GetFieldValue(ISdfPath path, TfToken field)
     {
         if (_data.TryGetValue(path, out var spec))
             return spec.Fields.TryGetValue(field, out var fieldValue) ? fieldValue : null;
@@ -127,7 +127,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return null;
     }
 
-    private VtValue? _GetMutableFieldValue(SdfPath path, TfToken field)
+    private VtValue? _GetMutableFieldValue(ISdfPath path, TfToken field)
     {
         if (_data.TryGetValue(path, out var spec))
             return spec.Fields.TryGetValue(field, out var fieldValue) ? fieldValue : null;
@@ -135,13 +135,13 @@ public class SdfData : SdfAbstractData, ISdfData
         return null;
     }
 
-    public override VtValue Get(SdfPath path, TfToken field)
+    public override VtValue Get(ISdfPath path, TfToken field)
     {
         var value = _GetFieldValue(path, field);
         return value ?? new VtValue();
     }
 
-    public override void Set(SdfPath path, TfToken field, VtValue value)
+    public override void Set(ISdfPath path, TfToken field, VtValue value)
     {
         if (value.IsEmpty())
         {
@@ -154,7 +154,7 @@ public class SdfData : SdfAbstractData, ISdfData
             _data[path].Fields[field] = value;
     }
 
-    public override void Set(SdfPath path, TfToken field, SdfAbstractDataConstValue value)
+    public override void Set(ISdfPath path, TfToken field, SdfAbstractDataConstValue value)
     {
         var newValue = _GetOrCreateFieldValue(path, field);
         if (newValue is not null)
@@ -165,7 +165,7 @@ public class SdfData : SdfAbstractData, ISdfData
         }
     }
 
-    private VtValue? _GetOrCreateFieldValue(SdfPath path, TfToken field)
+    private VtValue? _GetOrCreateFieldValue(ISdfPath path, TfToken field)
     {
         if (!_data.TryGetValue(path, out var spec))
             return null;
@@ -177,13 +177,13 @@ public class SdfData : SdfAbstractData, ISdfData
         return spec.Fields[field];
     }
 
-    public override void Erase(SdfPath path, TfToken field)
+    public override void Erase(ISdfPath path, TfToken field)
     {
         if (_data.TryGetValue(path, out var spec))
             spec.Fields.Remove(field);
     }
 
-    public override List<TfToken> List(SdfPath path)
+    public override List<TfToken> List(ISdfPath path)
     {
         var names = new List<TfToken>();
         if (_data.TryGetValue(path, out var spec))
@@ -203,7 +203,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return times;
     }
 
-    public override HashSet<double> ListTimeSamplesForPath(SdfPath path)
+    public override HashSet<double> ListTimeSamplesForPath(ISdfPath path)
     {
         var times = new HashSet<double>();
         var value = Get(path, new TfToken(SdfDataTokens.TimeSamples));
@@ -221,7 +221,7 @@ public class SdfData : SdfAbstractData, ISdfData
     public override bool GetBracketingTimeSamples(double time, out double tLower, out double tUpper)
         => _GetBracketingTimeSamples(ListAllTimeSamples(), time, out tLower, out tUpper);
 
-    public override int GetNumTimeSamplesForPath(SdfPath path)
+    public override int GetNumTimeSamplesForPath(ISdfPath path)
     {
         var fieldValue = _GetFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())
@@ -229,7 +229,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return 0;
     }
 
-    public override bool GetBracketingTimeSamplesForPath(SdfPath path, double time, out double tLower, out double tUpper)
+    public override bool GetBracketingTimeSamplesForPath(ISdfPath path, double time, out double tLower, out double tUpper)
     {
         var fieldValue = _GetFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())
@@ -241,7 +241,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool GetPreviousTimeSampleForPath(SdfPath path, double time, out double tPrevious)
+    public override bool GetPreviousTimeSampleForPath(ISdfPath path, double time, out double tPrevious)
     {
         var fieldValue = _GetFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())
@@ -273,7 +273,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool QueryTimeSample(SdfPath path, double time, SdfAbstractDataValue? optionalValue = null)
+    public override bool QueryTimeSample(ISdfPath path, double time, SdfAbstractDataValue? optionalValue = null)
     {
         var fieldValue = _GetFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())
@@ -285,7 +285,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override bool QueryTimeSample(SdfPath path, double time, VtValue? value = null)
+    public override bool QueryTimeSample(ISdfPath path, double time, VtValue? value = null)
     {
         var fieldValue = _GetFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())
@@ -302,7 +302,7 @@ public class SdfData : SdfAbstractData, ISdfData
         return false;
     }
 
-    public override void SetTimeSample(SdfPath path, double time, VtValue value)
+    public override void SetTimeSample(ISdfPath path, double time, VtValue value)
     {
         if (value.IsEmpty())
         {
@@ -326,7 +326,7 @@ public class SdfData : SdfAbstractData, ISdfData
         Set(path, new TfToken(SdfDataTokens.TimeSamples), new VtValue(newSamples));
     }
 
-    public override void EraseTimeSample(SdfPath path, double time)
+    public override void EraseTimeSample(ISdfPath path, double time)
     {
         var fieldValue = _GetMutableFieldValue(path, new TfToken(SdfDataTokens.TimeSamples));
         if (fieldValue is not null && fieldValue.IsHolding<SdfTimeSampleMap>())

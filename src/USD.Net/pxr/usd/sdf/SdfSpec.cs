@@ -118,13 +118,13 @@ public abstract class SdfSpec : ISdfSpec
     /// <summary>
     /// Returns all fields with values.
     /// </summary>
-    public List<TfToken> ListFields()
+    public IReadOnlyList<TfToken> ListFields()
     {
         if (_id is null)
             return [];
 
         var layer = GetLayer();
-        return layer?.ListFields(_id.GetPath()) ?? new List<TfToken>();
+        return layer?.ListFields(_id.GetPath()) ?? [];
     }
 
     /// <summary>
@@ -270,10 +270,8 @@ public abstract class SdfSpec : ISdfSpec
     /// This is not the complete list of keys, it is only those that
     /// should be considered to be metadata by inspectors or other presentation UI.
     /// </summary>
-    public List<TfToken> GetMetaDataInfoKeys()
-    {
-        return GetSchema().GetMetadataFields(GetSpecType());
-    }
+    public IReadOnlyList<TfToken> GetMetaDataInfoKeys()
+        => GetSchema().GetMetadataFields(GetSpecType());
 
     /// <summary>
     /// Returns this metadata key's displayGroup.
@@ -449,11 +447,15 @@ public abstract class SdfSpec : ISdfSpec
     /// </summary>
     public bool IsInert(bool ignoreChildren = false)
     {
-        if (_id == null)
+        if (_id is null)
             return false;
 
         var layer = GetLayer();
-        return layer?._IsInert(_id.GetPath(), ignoreChildren) ?? false;
+        if (layer is SdfLayer concreteLayer)
+        {
+            return concreteLayer._IsInert(_id.GetPath(), ignoreChildren);
+        }
+        return false;
     }
 
     #endregion
@@ -471,7 +473,7 @@ public abstract class SdfSpec : ISdfSpec
         ISdfFieldDefinition? fieldDef,
         string editType)
     {
-        if (fieldDef == null)
+        if (fieldDef is null)
         {
             // TODO: Add proper error reporting
             return false;
@@ -498,7 +500,11 @@ public abstract class SdfSpec : ISdfSpec
     protected bool MoveSpec(ISdfPath oldPath, ISdfPath newPath)
     {
         var layer = GetLayer();
-        return layer?._MoveSpec(oldPath, newPath) ?? false;
+        if (layer is SdfLayer concreteLayer)
+        {
+            return concreteLayer._MoveSpec(oldPath, newPath);
+        }
+        return false;
     }
 
     /// <summary>
@@ -506,7 +512,11 @@ public abstract class SdfSpec : ISdfSpec
     /// </summary>
     protected static bool DeleteSpec(ISdfLayer layer, ISdfPath path)
     {
-        return layer._DeleteSpec(path);
+        if (layer is SdfLayer concreteLayer)
+        {
+            return concreteLayer._DeleteSpec(path);
+        }
+        return false;
     }
 
     #endregion

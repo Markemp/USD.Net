@@ -3,6 +3,7 @@ using Pxr.Base.Vt;
 
 namespace Pxr.Usd.Sdf;
 
+// AIDEV-NOTE: DO NOT MODIFY WITHOUT PERMISSION.  Interface extracted from OpenUSD spec.h
 /// <summary>
 /// Base interface for all Sdf spec classes.
 /// </summary>

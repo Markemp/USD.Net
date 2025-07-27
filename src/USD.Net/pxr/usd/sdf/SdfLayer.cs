@@ -874,7 +874,7 @@ public class SdfLayer : ISdfLayer
         var fieldDef = _GetRequiredFieldDef(path, fieldName);
         if (fieldDef is not null)
         {
-            if (GetField(path, fieldName).Equals(fieldDef.FallbackValue))
+            if (GetField(path, fieldName).Equals(fieldDef.GetFallbackValue()))
                 return;
         }
 
@@ -910,7 +910,7 @@ public class SdfLayer : ISdfLayer
     /// <summary>
     /// Gets the required field definition for a field if it exists.
     /// </summary>
-    private IFieldDefinition? _GetRequiredFieldDef(ISdfPath path, TfToken fieldName, SdfSpecType? specType = null)
+    private ISdfFieldDefinition? _GetRequiredFieldDef(ISdfPath path, TfToken fieldName, SdfSpecType? specType = null)
     {
         var schema = GetSchema();
         if (schema.IsRequiredFieldName(fieldName))
@@ -975,6 +975,279 @@ public class SdfLayer : ISdfLayer
         
         _data.SetDictValueByKey(path, fieldName, keyPath, value);
         _isDirty = true;
+    }
+    
+    /// <summary>
+    /// Determines whether the spec at the given path has no significant data.
+    /// </summary>
+    /// <param name="path">The path to the spec to check</param>
+    /// <param name="ignoreChildren">If true, skip checking children fields</param>
+    /// <param name="requiredFieldOnlyPropertiesAreInert">If true, properties with only required fields are considered inert</param>
+    /// <returns>True if the spec doesn't affect the scene, false otherwise</returns>
+    /// <remarks>
+    /// A spec is considered inert if it has only the required SpecType field (stored
+    /// separately from other fields), and thus doesn't affect the scene. Special
+    /// cases exist for different spec types, such as prims with defining specifiers
+    /// or specific typenames, which always affect the scene.
+    /// </remarks>
+    internal bool _IsInert(ISdfPath path, bool ignoreChildren, bool requiredFieldOnlyPropertiesAreInert = false)
+    {
+        // If the spec has only the required SpecType field (stored
+        // separately from other fields), then it doesn't affect the scene.
+        var fields = ListFields(path);
+        if (!fields.Any())
+            return true;
+
+        // If the spec is custom it affects the scene.
+        if (GetFieldAs<bool>(path, SdfFieldKeys.Custom, false))
+            return false;
+
+        // Special cases for determining whether a spec affects the scene.
+        var specType = GetSpecType(path);
+
+        // Prims that are defs or with a specific typename always affect the scene
+        // since they bring a prim into existence.
+        if (specType == SdfSpecType.Prim)
+        {
+            var specifier = GetFieldAs<SdfSpecifier>(path, SdfFieldKeys.Specifier, SdfSpecifier.SdfSpecifierOver);
+            if (SdfSpecifierHelpers.SdfIsDefiningSpecifier(specifier))
+                return false;
+
+            var type = GetFieldAs<TfToken>(path, SdfFieldKeys.TypeName);
+            if (!type.IsEmpty)
+                return false;
+        }
+
+        // For other specs, use the schema to determine the list of required fields.
+        if (specType != SdfSpecType.Unknown)
+        {
+            var schema = GetSchema();
+            var specDefinition = schema.GetSpecDefinition(specType);
+            if (specDefinition is null)
+                return false;
+
+            // Special case for properties with only required fields.
+            // This currently only applies to the connectability attributes on 
+            // attributes in Usd shading, where the connectability of a shader's
+            // input is considered non-significant scene description.
+            if (requiredFieldOnlyPropertiesAreInert && path.IsPropertyPath())
+            {
+                foreach (var field in fields)
+                {
+                    if (!specDefinition.IsRequiredField(field))
+                        return false;
+                }
+                return true;
+            }
+
+            // If any field is not a required field (and not a children field
+            // that's being skipped), the spec is not inert.
+            foreach (var field in fields)
+            {
+                // If specified, skip over children fields. This is a special case
+                // to allow _IsInertSubtree to process these children separately.
+                if (ignoreChildren)
+                {
+                    if ((specType == SdfSpecType.Prim &&
+                         (field == SdfChildrenKeys.PrimChildren ||
+                          field == SdfChildrenKeys.PropertyChildren ||
+                          field == SdfChildrenKeys.VariantSetChildren))
+                        ||
+                        (specType == SdfSpecType.VariantSet &&
+                         field == SdfChildrenKeys.VariantChildren))
+                    {
+                        continue;
+                    }
+                }
+
+                // If the field is required, ignore it.
+                if (specDefinition.IsRequiredField(field))
+                    continue;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether the entire subtree rooted at the given path is inert.
+    /// </summary>
+    /// <param name="path">The root path of the subtree to check</param>
+    /// <returns>True if the entire subtree doesn't affect the scene, false otherwise</returns>
+    /// <remarks>
+    /// This method recursively checks if a spec and all its children are inert.
+    /// It handles special cases for variant sets and prim hierarchies.
+    /// </remarks>
+    internal bool _IsInertSubtree(ISdfPath path)
+    {
+        if (!_IsInert(path, true /*ignoreChildren*/, true /* requiredFieldOnlyPropertiesAreInert */))
+        {
+            return false;
+        }
+
+        // Check for a variant set path first -- this is a variant selection path
+        // whose selection is the empty string.
+        if (path.IsPrimVariantSelectionPath() &&
+            string.IsNullOrEmpty(path.GetVariantSelection().Item2))
+        {
+            var vsetName = path.GetVariantSelection().Item1;
+            var parentPath = path.GetParentPath();
+
+            List<TfToken> variants;
+            if (HasField(path, SdfChildrenKeys.VariantChildren, out variants!))
+            {
+                foreach (var variant in variants ?? [])
+                {
+                    if (!_IsInertSubtree(parentPath.AppendVariantSelection(vsetName, variant.GetText())))
+                        return false;
+                }
+            }
+        }
+        else if (path.IsPrimOrPrimVariantSelectionPath())
+        {
+            // Check for prim & variant set children.
+            var childrenFields = new[] {
+                SdfChildrenKeys.PrimChildren,
+                SdfChildrenKeys.VariantSetChildren
+            };
+
+            foreach (var childrenField in childrenFields)
+            {
+                List<TfToken> childNames;
+                if (HasField(path, childrenField, out childNames!))
+                {
+                    foreach (var name in childNames ?? [])
+                    {
+                        if (!_IsInertSubtree(path.AppendChild(name)))
+                            return false;
+                    }
+                }
+            }
+
+            List<TfToken> properties;
+            if (HasField(path, SdfChildrenKeys.PropertyChildren, out properties!))
+            {
+                foreach (var prop in properties ?? [])
+                {
+                    var propPath = path.AppendProperty(prop);
+                    if (!_IsInert(propPath,
+                        /* ignoreChildren = */ false,
+                        /* requiredFieldOnlyPropertiesAreInert = */ true))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+    
+    /// <summary>
+    /// Deletes the spec at the given path.
+    /// </summary>
+    /// <param name="path">The path to the spec to delete</param>
+    /// <returns>True if the spec was deleted, false otherwise</returns>
+    /// <remarks>
+    /// This method is used internally by SdfSpec and other classes to remove specs
+    /// from the layer. It properly handles inert subtrees by sending notifications
+    /// for all affected specs before deletion.
+    /// </remarks>
+    internal bool _DeleteSpec(ISdfPath path)
+    {
+        if (!PermissionToEdit())
+        {
+            // TODO: Add proper error reporting
+            // TF_CODING_ERROR("Cannot delete <%s>. Layer @%s@ is not editable",
+            //                 path.GetText(), GetIdentifier().c_str());
+            return false;
+        }
+
+        if (!HasSpec(path))
+        {
+            return false;
+        }
+
+        if (_IsInertSubtree(path))
+        {
+            // If the subtree is inert, enqueue notifications for each spec that's
+            // about to be removed. _PrimDeleteSpec adds a notice for the spec
+            // path it's given, but notices about inert specs don't imply anything
+            // about descendants. So if we just sent out a notice for the subtree
+            // root, clients would not be made aware of the removal of the other
+            // specs in the subtree.
+            
+            // TODO: Implement SdfChangeBlock
+            // SdfChangeBlock block;
+            
+            Traverse(path, (specPath) =>
+            {
+                // TODO: Implement change notifications
+                // Sdf_ChangeManager::Get().DidRemoveSpec(_self, specPath, /* inert = */ true);
+            });
+
+            _PrimDeleteSpec(path, /* inert = */ true);
+        }
+        else
+        {
+            _PrimDeleteSpec(path, /* inert = */ false);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Core primitive spec deletion method.
+    /// </summary>
+    /// <param name="path">The path to the spec to delete</param>
+    /// <param name="inert">Whether the spec is inert</param>
+    /// <remarks>
+    /// This method performs the actual deletion of a spec from the layer's data.
+    /// It handles change notifications and updates the layer's dirty state.
+    /// </remarks>
+    private void _PrimDeleteSpec(ISdfPath path, bool inert)
+    {
+        // TODO: Implement SdfChangeBlock
+        // SdfChangeBlock block;
+
+        // TODO: Implement change notifications
+        // Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
+
+        _data.EraseSpec(path);
+        _isDirty = true;
+    }
+
+    /// <summary>
+    /// Moves a spec from one path to another.
+    /// </summary>
+    /// <param name="oldPath">The current path of the spec</param>
+    /// <param name="newPath">The new path for the spec</param>
+    /// <returns>True if the spec was moved, false otherwise</returns>
+    /// <remarks>
+    /// This method is used internally to relocate specs within the layer hierarchy.
+    /// </remarks>
+    internal bool _MoveSpec(ISdfPath oldPath, ISdfPath newPath)
+    {
+        if (!PermissionToEdit())
+        {
+            return false;
+        }
+
+        if (!HasSpec(oldPath))
+        {
+            return false;
+        }
+
+        // TODO: Implement proper spec moving logic
+        // For now, this is a simplified implementation
+        _data.MoveSpec(oldPath, newPath);
+        _isDirty = true;
+        
+        return true;
     }
     
     #region Metadata Methods

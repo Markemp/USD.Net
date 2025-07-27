@@ -5,17 +5,12 @@ namespace Pxr.Usd.Sdf;
 
 public abstract class SdfAbstractDataSpecVisitor
 {
-    public abstract bool VisitSpec(ISdfAbstractData data, SdfPath path);
+    public abstract bool VisitSpec(ISdfAbstractData data, ISdfPath path);
     
     public virtual void Done(ISdfAbstractData data)
     {
     }
 }
-
-//public abstract class SdfAbstractDataValue
-//{
-//    public abstract bool StoreValue(VtValue value);
-//}
 
 public abstract class SdfAbstractData : ISdfAbstractData
 {
@@ -25,8 +20,8 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
     public abstract bool StreamsData();
     
-    public abstract void CreateSpec(SdfPath path, SdfSpecType specType);
-    public abstract bool HasSpec(SdfPath path);
+    public abstract void CreateSpec(ISdfPath path, SdfSpecType specType);
+    public abstract bool HasSpec(ISdfPath path);
     public bool Equals(ISdfAbstractData? data)
     {
         if (data is null) return false;
@@ -46,27 +41,27 @@ public abstract class SdfAbstractData : ISdfAbstractData
         return thisSpecsMatchRhsSpecs.Passed;
     }
 
-    public abstract void EraseSpec(SdfPath path);
-    public abstract void MoveSpec(SdfPath oldPath, SdfPath newPath);
-    public abstract SdfSpecType GetSpecType(SdfPath path);
+    public abstract void EraseSpec(ISdfPath path);
+    public abstract void MoveSpec(ISdfPath oldPath, ISdfPath newPath);
+    public abstract SdfSpecType GetSpecType(ISdfPath path);
 
-    public abstract bool Has(SdfPath path, TfToken fieldName, SdfAbstractDataValue? value = null);
-    public abstract bool Has(SdfPath path, TfToken fieldName, VtValue? value = null);
-    public abstract bool HasSpecAndField(SdfPath path, TfToken fieldName, SdfAbstractDataValue? value, out SdfSpecType specType);
-    public abstract bool HasSpecAndField(SdfPath path, TfToken fieldName, VtValue? value, out SdfSpecType specType);
+    public abstract bool Has(ISdfPath path, TfToken fieldName, SdfAbstractDataValue? value = null);
+    public abstract bool Has(ISdfPath path, TfToken fieldName, VtValue? value = null);
+    public abstract bool HasSpecAndField(ISdfPath path, TfToken fieldName, SdfAbstractDataValue? value, out SdfSpecType specType);
+    public abstract bool HasSpecAndField(ISdfPath path, TfToken fieldName, VtValue? value, out SdfSpecType specType);
 
-    public abstract VtValue Get(SdfPath path, TfToken fieldName);
-    public abstract void Set(SdfPath path, TfToken fieldName, VtValue value);
-    public abstract void Set(SdfPath path, TfToken fieldName, SdfAbstractDataConstValue value);
-    public abstract void Erase(SdfPath path, TfToken fieldName);
-    public abstract List<TfToken> List(SdfPath path);
+    public abstract VtValue Get(ISdfPath path, TfToken fieldName);
+    public abstract void Set(ISdfPath path, TfToken fieldName, VtValue value);
+    public abstract void Set(ISdfPath path, TfToken fieldName, SdfAbstractDataConstValue value);
+    public abstract void Erase(ISdfPath path, TfToken fieldName);
+    public abstract List<TfToken> List(ISdfPath path);
 
     public abstract HashSet<double> ListAllTimeSamples();
-    public abstract HashSet<double> ListTimeSamplesForPath(SdfPath path);
+    public abstract HashSet<double> ListTimeSamplesForPath(ISdfPath path);
     public abstract bool GetBracketingTimeSamples(double time, out double tLower, out double tUpper);
-    public abstract int GetNumTimeSamplesForPath(SdfPath path);
-    public abstract bool GetBracketingTimeSamplesForPath(SdfPath path, double time, out double tLower, out double tUpper);
-    public virtual bool GetPreviousTimeSampleForPath(SdfPath path, double time, out double tPrevious)
+    public abstract int GetNumTimeSamplesForPath(ISdfPath path);
+    public abstract bool GetBracketingTimeSamplesForPath(ISdfPath path, double time, out double tLower, out double tUpper);
+    public virtual bool GetPreviousTimeSampleForPath(ISdfPath path, double time, out double tPrevious)
     {
         tPrevious = 0;
         bool result = GetBracketingTimeSamplesForPath(path, time, out double lower, out double upper);
@@ -86,10 +81,10 @@ public abstract class SdfAbstractData : ISdfAbstractData
         }
         return result;
     }
-    public abstract bool QueryTimeSample(SdfPath path, double time, SdfAbstractDataValue? optionalValue = null);
-    public abstract bool QueryTimeSample(SdfPath path, double time, VtValue? value = null);
-    public abstract void SetTimeSample(SdfPath path, double time, VtValue value);
-    public abstract void EraseTimeSample(SdfPath path, double time);
+    public abstract bool QueryTimeSample(ISdfPath path, double time, SdfAbstractDataValue? optionalValue = null);
+    public abstract bool QueryTimeSample(ISdfPath path, double time, VtValue? value = null);
+    public abstract void SetTimeSample(ISdfPath path, double time, VtValue value);
+    public abstract void EraseTimeSample(ISdfPath path, double time);
 
     public void WriteToStream(TextWriter stream)
     {
@@ -133,7 +128,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
         source.VisitSpecs(copySpecs);
     }
 
-    public T GetAs<T>(SdfPath path, TfToken fieldName, T defaultValue = default!)
+    public T GetAs<T>(ISdfPath path, TfToken fieldName, T defaultValue = default!)
     {
         var value = Get(path, fieldName);
         if (value.IsHolding<T>())
@@ -141,7 +136,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
         return defaultValue;
     }
 
-    public bool HasDictKey(SdfPath path, TfToken fieldName, TfToken keyPath, SdfAbstractDataValue? value)
+    public bool HasDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath, SdfAbstractDataValue? value)
     {
         var tmp = new VtValue();
         bool result = HasDictKey(path, fieldName, keyPath, value != null ? tmp : null);
@@ -152,7 +147,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
         return result;
     }
 
-    public bool HasDictKey(SdfPath path, TfToken fieldName, TfToken keyPath, VtValue? value = null)
+    public bool HasDictKey(ISdfPath path, TfToken fieldName, TfToken keyPath, VtValue? value = null)
     {
         var dictVal = new VtValue();
         if (Has(path, fieldName, dictVal) && dictVal.IsHolding<VtDictionary>())
@@ -167,14 +162,14 @@ public abstract class SdfAbstractData : ISdfAbstractData
         return false;
     }
 
-    public VtValue GetDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public VtValue GetDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         var result = new VtValue();
         HasDictKey(path, fieldName, keyPath, result);
         return result;
     }
 
-    public void SetDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
+    public void SetDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath, VtValue value)
     {
         if (value.IsEmpty())
         {
@@ -188,13 +183,13 @@ public abstract class SdfAbstractData : ISdfAbstractData
         Set(path, fieldName, VtValue.Create(dict));
     }
 
-    public void SetDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath, SdfAbstractDataConstValue value)
+    public void SetDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath, SdfAbstractDataConstValue value)
     {
         var vtval = value.GetValue();
         SetDictValueByKey(path, fieldName, keyPath, vtval);
     }
 
-    public void EraseDictValueByKey(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public void EraseDictValueByKey(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         var dictVal = Get(path, fieldName);
         if (dictVal.IsHolding<VtDictionary>())
@@ -209,7 +204,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
         }
     }
 
-    public List<TfToken> ListDictKeys(SdfPath path, TfToken fieldName, TfToken keyPath)
+    public List<TfToken> ListDictKeys(ISdfPath path, TfToken fieldName, TfToken keyPath)
     {
         var result = new List<TfToken>();
         var dictVal = GetDictValueByKey(path, fieldName, keyPath);
@@ -228,7 +223,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
     {
         public bool IsEmpty { get; private set; } = true;
 
-        public override bool VisitSpec(ISdfAbstractData data, SdfPath path)
+        public override bool VisitSpec(ISdfAbstractData data, ISdfPath path)
         {
             IsEmpty = false;
             return false;
@@ -242,7 +237,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
         public CheckAllSpecsExist(ISdfAbstractData data) => _data = data;
 
-        public override bool VisitSpec(ISdfAbstractData data, SdfPath path)
+        public override bool VisitSpec(ISdfAbstractData data, ISdfPath path)
         {
             if (!_data.HasSpec(path))
                 Passed = false;
@@ -257,13 +252,13 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
         public CheckAllSpecsMatch(ISdfAbstractData rhs) => _rhs = rhs;
 
-        public override bool VisitSpec(ISdfAbstractData lhs, SdfPath path)
+        public override bool VisitSpec(ISdfAbstractData lhs, ISdfPath path)
         {
             Passed = AreSpecsAtPathEqual(lhs, _rhs, path);
             return Passed;
         }
 
-        private static bool AreSpecsAtPathEqual(ISdfAbstractData lhs, ISdfAbstractData rhs, SdfPath path)
+        private static bool AreSpecsAtPathEqual(ISdfAbstractData lhs, ISdfAbstractData rhs, ISdfPath path)
         {
             var lhsFields = lhs.List(path);
             var rhsFields = rhs.List(path);
@@ -291,7 +286,7 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
         public CopySpecs(ISdfAbstractData dest) => _dest = dest;
 
-        public override bool VisitSpec(ISdfAbstractData src, SdfPath path)
+        public override bool VisitSpec(ISdfAbstractData src, ISdfPath path)
         {
             var keys = src.List(path);
             _dest.CreateSpec(path, src.GetSpecType(path));
@@ -303,9 +298,9 @@ public abstract class SdfAbstractData : ISdfAbstractData
 
     private class SortedPathCollector : SdfAbstractDataSpecVisitor
     {
-        public SortedSet<SdfPath> Paths { get; } = new SortedSet<SdfPath>();
+        public SortedSet<ISdfPath> Paths { get; } = new SortedSet<ISdfPath>();
 
-        public override bool VisitSpec(ISdfAbstractData data, SdfPath path)
+        public override bool VisitSpec(ISdfAbstractData data, ISdfPath path)
         {
             Paths.Add(path);
             return true;
