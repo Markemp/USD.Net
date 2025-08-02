@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
-using Pxr.Usd;
-using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd.UsdGeom;
 

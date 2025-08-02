@@ -75,6 +75,15 @@ public abstract class UsdObject : IUsdObject
 
     #endregion
 
+    #region Static Methods
+    
+    /// <summary>
+    /// Return the namespace delimiter used to separate namespaces in property names.
+    /// </summary>
+    public static char GetNamespaceDelimiter() => ':';
+    
+    #endregion
+
     #region Generic Metadata Access
 
     public virtual bool GetMetadata<T>(TfToken key, out T value)

@@ -51,24 +51,41 @@ public abstract class UsdProperty : UsdObject, IUsdProperty
 
     public virtual TfToken GetNamespace()
     {
-        var name = GetName();
-        var colonIndex = name.IndexOf(':');
-        var namespaceStr = colonIndex >= 0 ? name.Substring(0, colonIndex) : string.Empty;
-        return new TfToken(namespaceStr);
+        // Match OpenUSD behavior: use GetName() which returns TfToken, then get its string
+        string fullName = GetName().GetString();
+        int delim = fullName.LastIndexOf(GetNamespaceDelimiter());
+        
+        // If delimiter is at the end, that's invalid
+        if (delim == fullName.Length - 1)
+            return TfToken.Empty;
+            
+        return delim == -1 ? TfToken.Empty : new TfToken(fullName.Substring(0, delim));
     }
 
     public virtual TfToken GetBaseName()
     {
-        var name = GetName();
-        var colonIndex = name.LastIndexOf(':');
-        var baseNameStr = colonIndex >= 0 ? name.Substring(colonIndex + 1) : name;
-        return new TfToken(baseNameStr);
+        // Match OpenUSD behavior: use GetName() which returns TfToken, then get its string
+        string fullName = GetName().GetString();
+        int delim = fullName.LastIndexOf(GetNamespaceDelimiter());
+        
+        // If delimiter is at the end, that's invalid
+        if (delim == fullName.Length - 1)
+            return TfToken.Empty;
+            
+        return delim == -1 ? GetName() : new TfToken(fullName.Substring(delim + 1));
     }
 
     public virtual IReadOnlyList<string> SplitName()
     {
-        var name = GetName();
-        var parts = name.Split(':');
+        // Match OpenUSD behavior: use GetName() which returns TfToken, then tokenize
+        // In OpenUSD this uses SdfPath::TokenizeIdentifier
+        string fullName = GetName().GetString();
+        
+        // Empty or ends with delimiter is invalid
+        if (string.IsNullOrEmpty(fullName) || fullName.EndsWith(GetNamespaceDelimiter()))
+            return Array.Empty<string>();
+            
+        var parts = fullName.Split(GetNamespaceDelimiter());
         return parts.ToList().AsReadOnly();
     }
 

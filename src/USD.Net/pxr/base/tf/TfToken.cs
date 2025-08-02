@@ -3,41 +3,196 @@ using System.Collections.ObjectModel;
 namespace Pxr.Base.Tf;
 
 /// <summary>
-/// TfToken is a lightweight, efficient string-like type used for representing identifiers and names efficiently.
-/// It provides fast equality comparison and low memory overhead through string interning.
+/// Token for efficient comparison, assignment, and hashing of known strings.
 /// </summary>
-public readonly struct TfToken : IEquatable<TfToken>
+/// <remarks>
+/// A TfToken is a handle for a registered string, and can be compared,
+/// assigned, and hashed in constant time.  It is useful when a bounded number
+/// of strings are used as fixed symbols (but never modified).
+///
+/// For example, the set of avar names in a shot is large but bounded, and
+/// once an avar name is discovered, it is never manipulated.  If these names
+/// were passed around as strings, every comparison and hash would be linear
+/// in the number of characters.  (String assignment itself is sometimes a
+/// constant time operation, but it is sometimes linear in the length of the
+/// string as well as requiring a memory allocation.)
+///
+/// To use TfToken, simply create an instance from a string or const char*.
+/// If the string hasn't been seen before, a copy of it is added to a global
+/// table.  The resulting TfToken is simply a wrapper around an string*,
+/// pointing that canonical copy of the string.  Thus, operations on the token
+/// are very fast.  (The string's hash is simply the address of the canonical
+/// copy, so hashing the string is constant time.)
+///
+/// The free functions \c TfToTokenVector() and \c TfToStringVector() provide
+/// conversions to and from vectors of \c string.
+/// 
+/// Note: Access to the global table is protected by a mutex.  This is a good
+/// idea as long as clients do not construct tokens from strings too
+/// frequently.  Construct tokens only as often as you must (for example, as
+/// you read data files), and <i>never</i> in inner loops.  Of course, once
+/// you have a token, feel free to compare, assign, and hash it as often as
+/// you like.  (That's what it's for.)  In order to help prevent tokens from
+/// being re-created over and over, auto type conversion from \c string and \c
+/// char* to \c TfToken is disabled (you must use the explicit \c TfToken
+/// constructors).  However, auto conversion from \c TfToken to \c string and
+/// \c char* is provided.
+/// </remarks>
+public readonly struct TfToken : IEquatable<TfToken>, IComparable<TfToken>
 {
     private readonly string? _value;
 
+    /// <summary>
+    /// Create the empty token, containing the empty string.
+    /// </summary>
+    public TfToken()
+    {
+        _value = string.Empty;
+    }
+
+    /// <summary>
+    /// Acquire a token for the given string.
+    /// </summary>
+    /// <remarks>
+    /// This constructor involves a string hash and a lookup in the global
+    /// table, and so should not be done more often than necessary.  When
+    /// possible, create a token once and reuse it many times.
+    /// </remarks>
     public TfToken(string? value)
     {
         _value = string.IsInterned(value ?? string.Empty) ?? string.Intern(value ?? string.Empty);
     }
 
+    /// <summary>
+    /// Acquire a token for the given character span.
+    /// </summary>
+    /// <remarks>
+    /// This constructor involves a string hash and a lookup in the global
+    /// table, and so should not be done more often than necessary.  When
+    /// possible, create a token once and reuse it many times.
+    /// </remarks>
     public TfToken(ReadOnlySpan<char> value)
     {
         var str = value.ToString();
         _value = string.IsInterned(str) ?? string.Intern(str);
     }
 
-    public static implicit operator TfToken(string? value) => new(value);
-    public static implicit operator string(TfToken token) => token._value ?? string.Empty;
+    /// <summary>
+    /// Find the token for the given string, if one exists.
+    /// </summary>
+    /// <remarks>
+    /// If a token has previous been created for the given string, this
+    /// will return it.  Otherwise, the empty token will be returned.
+    /// </remarks>
+    public static TfToken Find(string s)
+    {
+        var interned = string.IsInterned(s);
+        return interned != null ? new TfToken(interned) : Empty;
+    }
 
-    public bool IsEmpty => string.IsNullOrEmpty(_value);
-    
+    /// <summary>
+    /// Return a size_t hash for this token.
+    /// </summary>
+    /// <remarks>
+    /// The hash is based on the token's storage identity; this is immutable
+    /// as long as the token is in use anywhere in the process.
+    /// </remarks>
+    public int Hash() => _value?.GetHashCode() ?? 0;
+
+    /// <summary>
+    /// Return the size of the string that this token represents.
+    /// </summary>
+    public int Size => _value?.Length ?? 0;
+
+    /// <summary>
+    /// Return the text that this token represents.
+    /// </summary>
+    /// <remarks>
+    /// The returned pointer value is not valid after this TfToken
+    /// object has been destroyed.
+    /// </remarks>
     public string GetText() => _value ?? string.Empty;
 
+    /// <summary>
+    /// Synonym for GetText().
+    /// </summary>
+    public string Data => GetText();
+
+    /// <summary>
+    /// Return the string that this token represents.
+    /// </summary>
+    public string GetString() => _value ?? string.Empty;
+
+    /// <summary>
+    /// Returns true iff this token contains the empty string ""
+    /// </summary>
+    public bool IsEmpty => string.IsNullOrEmpty(_value);
+
+    /// <summary>
+    /// Equality operator
+    /// </summary>
     public bool Equals(TfToken other) => ReferenceEquals(_value, other._value);
 
-    public override bool Equals(object? obj) => obj is TfToken other && Equals(other);
+    /// <summary>
+    /// Equality operator for string. Not as fast as direct token to token equality testing
+    /// </summary>
+    public bool Equals(string other) => string.Equals(_value, other, StringComparison.Ordinal);
+
+    public override bool Equals(object? obj) => obj switch
+    {
+        TfToken token => Equals(token),
+        string str => Equals(str),
+        _ => false
+    };
 
     public override int GetHashCode() => _value?.GetHashCode() ?? 0;
 
+    /// <summary>
+    /// Less-than operator that compares tokenized strings lexicographically.
+    /// Allows TfToken to be used in std::set equivalent structures.
+    /// </summary>
+    public int CompareTo(TfToken other)
+    {
+        return string.Compare(_value, other._value, StringComparison.Ordinal);
+    }
+
     public override string ToString() => _value ?? string.Empty;
+
+    /// <summary>
+    /// Allow TfToken to be auto-converted to string
+    /// </summary>
+    public static implicit operator string(TfToken token) => token.GetString();
 
     public static bool operator ==(TfToken left, TfToken right) => left.Equals(right);
     public static bool operator !=(TfToken left, TfToken right) => !left.Equals(right);
+
+    /// <summary>
+    /// Equality operator for string. Not as fast as direct token to token equality testing
+    /// </summary>
+    public static bool operator ==(TfToken token, string str) => token.Equals(str);
+    public static bool operator !=(TfToken token, string str) => !token.Equals(str);
+    public static bool operator ==(string str, TfToken token) => token.Equals(str);
+    public static bool operator !=(string str, TfToken token) => !token.Equals(str);
+
+    /// <summary>
+    /// Less-than operator that compares tokenized strings lexicographically.
+    /// </summary>
+    public static bool operator <(TfToken left, TfToken right) => left.CompareTo(right) < 0;
+    
+    /// <summary>
+    /// Greater-than operator that compares tokenized strings lexicographically.
+    /// </summary>
+    public static bool operator >(TfToken left, TfToken right) => left.CompareTo(right) > 0;
+    
+    /// <summary>
+    /// Less-than-or-equal operator that compares tokenized strings lexicographically.
+    /// </summary>
+    public static bool operator <=(TfToken left, TfToken right) => left.CompareTo(right) <= 0;
+    
+    /// <summary>
+    /// Greater-than-or-equal operator that compares tokenized strings lexicographically.
+    /// </summary>
+    public static bool operator >=(TfToken left, TfToken right) => left.CompareTo(right) >= 0;
 
     public static readonly TfToken Empty = new(string.Empty);
 }
@@ -150,4 +305,31 @@ public static class UsdTokens
     /// <returns>True if the token is a template</returns>
     public static bool IsTemplate(TfToken token) 
         => token.GetText().Contains("__INSTANCE_NAME__");
+}
+
+/// <summary>
+/// Convert the vector of strings into a vector of TfToken
+/// </summary>
+public static class TfTokenUtilities
+{
+    /// <summary>
+    /// Convert the list of strings into a list of TfToken
+    /// </summary>
+    public static List<TfToken> ToTokenList(IEnumerable<string> strings)
+    {
+        return strings.Select(s => new TfToken(s)).ToList();
+    }
+
+    /// <summary>
+    /// Convert the list of TfToken into a list of strings
+    /// </summary>
+    public static List<string> ToStringList(IEnumerable<TfToken> tokens)
+    {
+        return tokens.Select(t => t.GetString()).ToList();
+    }
+
+    /// <summary>
+    /// Overload hash_value for TfToken (equivalent to C++ hash_value function).
+    /// </summary>
+    public static int HashValue(TfToken token) => token.Hash();
 }

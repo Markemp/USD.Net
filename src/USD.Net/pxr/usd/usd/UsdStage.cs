@@ -238,7 +238,7 @@ public sealed class UsdStage
         {
             // Update type name if provided
             if (typeName.HasValue && !typeName.Value.IsEmpty)
-                existingPrim.SetTypeName(typeName.Value.GetText());
+                existingPrim.SetTypeName(typeName.Value);
 
             return existingPrim;
         }
@@ -383,7 +383,7 @@ public sealed class UsdStage
         foreach (var property in primSpec.GetProperties())
         {
             // Create attribute on the prim
-            var attribute = usdPrim.CreateAttribute(property.GetName(), property.GetTypeName());
+            var attribute = usdPrim.CreateAttribute(property.Name, property.GetType().ToString());
             
             // Set default value if available
             var defaultValue = property.GetDefaultValue();

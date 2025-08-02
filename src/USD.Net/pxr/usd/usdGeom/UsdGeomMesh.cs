@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Pxr.Base.Tf;
 using Pxr.Base.Vt;
-using Pxr.Usd;
 using Pxr.Usd.Sdf;
-using Pxr.Usd.UsdShade;
 
 namespace Pxr.Usd.UsdGeom;
 
@@ -647,12 +642,12 @@ public class UsdGeomMesh : UsdGeomPointBased
     
     #region Static Factory Methods
     
-    public static UsdGeomMesh Get(UsdStage stage, SdfPath path)
+    public static UsdGeomMesh Get(UsdStage stage, ISdfPath path)
     {
         return Get<UsdGeomMesh>(stage, path);
     }
     
-    public new static UsdGeomMesh Define(UsdStage stage, SdfPath path)
+    public new static UsdGeomMesh Define(UsdStage stage, ISdfPath path)
     {
         return Define<UsdGeomMesh>(stage, path);
     }
