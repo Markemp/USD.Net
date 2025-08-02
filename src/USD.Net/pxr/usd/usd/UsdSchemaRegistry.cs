@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Pxr.Base.Tf;
 
@@ -13,6 +10,24 @@ namespace Pxr.Usd;
 /// </summary>
 public class UsdSchemaRegistry
 {
+    /// <summary>
+    /// A policy for filtering by schema version when querying for schemas in a
+    /// particular schema family.
+    /// </summary>
+    public enum VersionPolicy
+    {
+        /// <summary>All versions in the family.</summary>
+        All,
+        /// <summary>Versions greater than the specified version.</summary>
+        GreaterThan,
+        /// <summary>Versions greater than or equal to the specified version.</summary>
+        GreaterThanOrEqual,
+        /// <summary>Versions less than the specified version.</summary>
+        LessThan,
+        /// <summary>Versions less than or equal to the specified version.</summary>
+        LessThanOrEqual
+    }
+
     private static readonly Lazy<UsdSchemaRegistry> _instance = new(() => new UsdSchemaRegistry());
     
     private readonly ConcurrentDictionary<Type, UsdSchemaInfo> _schemasByType = new();

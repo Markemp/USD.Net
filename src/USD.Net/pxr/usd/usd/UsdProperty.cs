@@ -3,11 +3,7 @@ using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
 
-/// <summary>
-/// UsdProperty is the base class for UsdAttribute and UsdRelationship, 
-/// representing properties in a scene graph.
-/// </summary>
-public abstract class UsdProperty : UsdObject
+public abstract class UsdProperty : UsdObject, IUsdProperty
 {
     private readonly Dictionary<string, object> _metadata = [];
     private bool _isCustom;
@@ -15,16 +11,10 @@ public abstract class UsdProperty : UsdObject
 
     #region Construction
 
-    /// <summary>
-    /// Create an invalid property.
-    /// </summary>
     protected UsdProperty() : base()
     {
     }
 
-    /// <summary>
-    /// Create a property with stage and path.
-    /// </summary>
     protected UsdProperty(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
@@ -33,24 +23,15 @@ public abstract class UsdProperty : UsdObject
 
     #region Property Validation
 
-    /// <summary>
-    /// Return true if this property is defined (valid and authored).
-    /// </summary>
     public virtual bool IsDefined() => IsValid() && IsAuthored();
 
-    /// <summary>
-    /// Return true if this property has authored opinions.
-    /// </summary>
     public virtual bool IsAuthored()
     {
         // TODO: Check if property has authored opinions in layer stack
         return IsValid();
     }
 
-    /// <summary>
-    /// Return true if this property is authored at the current edit target.
-    /// </summary>
-    public virtual bool IsAuthoredAt(UsdEditTarget? editTarget = null)
+    public virtual bool IsAuthoredAt(UsdEditTarget editTarget)
     {
         // TODO: Check specific edit target for authoring
         return IsAuthored();
@@ -60,81 +41,52 @@ public abstract class UsdProperty : UsdObject
 
     #region Custom and Namespace Properties
 
-    /// <summary>
-    /// Return true if this is a custom property.
-    /// </summary>
     public virtual bool IsCustom() => _isCustom;
 
-    /// <summary>
-    /// Set whether this property is custom.
-    /// </summary>
-    public virtual void SetCustom(bool custom)
+    public virtual bool SetCustom(bool isCustom)
     {
-        _isCustom = custom;
+        _isCustom = isCustom;
+        return true;
     }
 
-    /// <summary>
-    /// Return the namespace portion of this property's name.
-    /// </summary>
-    public virtual string GetNamespace()
+    public virtual TfToken GetNamespace()
     {
         var name = GetName();
         var colonIndex = name.IndexOf(':');
-        return colonIndex >= 0 ? name.Substring(0, colonIndex) : string.Empty;
+        var namespaceStr = colonIndex >= 0 ? name.Substring(0, colonIndex) : string.Empty;
+        return new TfToken(namespaceStr);
     }
 
-    /// <summary>
-    /// Return the base name of this property (without namespace).
-    /// </summary>
-    public virtual string GetBaseName()
+    public virtual TfToken GetBaseName()
     {
         var name = GetName();
         var colonIndex = name.LastIndexOf(':');
-        return colonIndex >= 0 ? name.Substring(colonIndex + 1) : name;
+        var baseNameStr = colonIndex >= 0 ? name.Substring(colonIndex + 1) : name;
+        return new TfToken(baseNameStr);
     }
 
-    /// <summary>
-    /// Split the property name into namespace components and base name.
-    /// </summary>
-    public virtual (string[] namespaces, string baseName) SplitName()
+    public virtual IReadOnlyList<string> SplitName()
     {
         var name = GetName();
         var parts = name.Split(':');
-        
-        if (parts.Length <= 1)
-            return (Array.Empty<string>(), name);
-            
-        var namespaces = new string[parts.Length - 1];
-        Array.Copy(parts, namespaces, parts.Length - 1);
-        var baseName = parts[parts.Length - 1];
-        
-        return (namespaces, baseName);
+        return parts.ToList().AsReadOnly();
     }
 
     #endregion
 
     #region Display Groups
 
-    /// <summary>
-    /// Get the display group for this property.
-    /// </summary>
     public virtual string GetDisplayGroup()
     {
         return _displayGroup;
     }
 
-    /// <summary>
-    /// Set the display group for this property.
-    /// </summary>
     public virtual bool SetDisplayGroup(string displayGroup)
     {
         _displayGroup = displayGroup ?? string.Empty;
         return true;
     }
 
-    /// <summary>
-    /// Clear the display group for this property.
-    /// </summary>
     public virtual bool ClearDisplayGroup()
     {
         _displayGroup = string.Empty;
@@ -144,20 +96,29 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Return true if this property has a display group.
     /// </summary>
-    public virtual bool HasDisplayGroup()
+    public virtual bool HasAuthoredDisplayGroup()
     {
         return !string.IsNullOrEmpty(_displayGroup);
     }
 
-    /// <summary>
-    /// Get nested display groups as a hierarchy.
-    /// </summary>
-    public virtual string[] GetNestedDisplayGroups()
+    public virtual bool SetNestedDisplayGroups(IEnumerable<string> nestedGroups)
+    {
+        if (nestedGroups is null)
+        {
+            _displayGroup = string.Empty;
+            return true;
+        }
+
+        _displayGroup = string.Join(":", nestedGroups);
+        return true;
+    }
+
+    public virtual IReadOnlyList<string> GetNestedDisplayGroups()
     {
         if (string.IsNullOrEmpty(_displayGroup))
             return Array.Empty<string>();
             
-        return _displayGroup.Split(':', StringSplitOptions.RemoveEmptyEntries);
+        return _displayGroup.Split(':', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
     }
 
     #endregion
@@ -167,7 +128,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Set metadata for this property.
     /// </summary>
-    public virtual bool SetMetadata<T>(TfToken key, T value)
+    public override bool SetMetadata<T>(TfToken key, T value)
     {
         _metadata[key.GetText()] = value!;
         return true;
@@ -186,7 +147,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Return true if this property has metadata with the given key.
     /// </summary>
-    public virtual bool HasMetadata(TfToken key)
+    public override bool HasMetadata(TfToken key)
     {
         return _metadata.ContainsKey(key.GetText());
     }
@@ -194,7 +155,7 @@ public abstract class UsdProperty : UsdObject
     /// <summary>
     /// Clear metadata with the given key.
     /// </summary>
-    public virtual bool ClearMetadata(TfToken key)
+    public override bool ClearMetadata(TfToken key)
     {
         return _metadata.Remove(key.GetText());
     }
@@ -211,22 +172,38 @@ public abstract class UsdProperty : UsdObject
 
     #region Property Stack
 
-    /// <summary>
-    /// Get the strength-ordered list of property specs for this property.
-    /// </summary>
-    public virtual IEnumerable<SdfPropertySpec> GetPropertyStack()
+    public virtual IReadOnlyList<SdfPropertySpec> GetPropertyStack(UsdTimeCode time = default)
     {
         // TODO: Implement property stack resolution from layer composition
-        yield break;
+        return Array.Empty<SdfPropertySpec>();
     }
 
-    /// <summary>
-    /// Get property specs with layer offsets.
-    /// </summary>
-    public virtual IEnumerable<(SdfPropertySpec spec, SdfLayerOffset offset)> GetPropertyStackWithLayerOffsets()
+    public virtual IReadOnlyList<(SdfPropertySpec spec, SdfLayerOffset offset)> GetPropertyStackWithLayerOffsets(UsdTimeCode time = default)
     {
         // TODO: Implement property stack with layer offsets
-        yield break;
+        return Array.Empty<(SdfPropertySpec, SdfLayerOffset)>();
+    }
+
+    #endregion
+
+    #region Flattening
+
+    public virtual IUsdProperty FlattenTo(IUsdPrim parent)
+    {
+        // TODO: Implement property flattening
+        throw new NotImplementedException("Property flattening not yet implemented");
+    }
+
+    public virtual IUsdProperty FlattenTo(IUsdPrim parent, TfToken propName)
+    {
+        // TODO: Implement property flattening with custom name
+        throw new NotImplementedException("Property flattening not yet implemented");
+    }
+
+    public virtual IUsdProperty FlattenTo(IUsdProperty property)
+    {
+        // TODO: Implement property-to-property flattening
+        throw new NotImplementedException("Property flattening not yet implemented");
     }
 
     #endregion

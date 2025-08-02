@@ -183,17 +183,18 @@ public class SdfPrimSpec
     #region Property Management
 
     /// <summary>
-    /// Create a property spec with the given name and type.
+    /// Add a property spec to this prim spec.
     /// </summary>
-    public SdfPropertySpec CreateProperty(string name, string typeName)
+    public void AddProperty(SdfPropertySpec propertySpec)
     {
-        if (string.IsNullOrEmpty(name))
-            throw new ArgumentException("Property name cannot be null or empty", nameof(name));
+        if (propertySpec == null)
+            throw new ArgumentNullException(nameof(propertySpec));
+        
+        if (string.IsNullOrEmpty(propertySpec.Name))
+            throw new ArgumentException("Property name cannot be null or empty", nameof(propertySpec));
 
-        var propertyPath = _path.AppendProperty(name);
-        var propertySpec = new SdfPropertySpec(_layer, propertyPath, name, typeName);
-        _properties[name] = propertySpec;
-        return propertySpec;
+        _properties[propertySpec.Name] = propertySpec;
+        propertySpec.AddToPrim(this);
     }
 
     /// <summary>
@@ -205,6 +206,24 @@ public class SdfPrimSpec
             return null;
 
         return _properties.TryGetValue(name, out var property) ? property : null;
+    }
+
+    /// <summary>
+    /// Get a relationship by name.
+    /// </summary>
+    public SdfRelationshipSpec? GetRelationship(string name)
+    {
+        var prop = GetPropertyByName(name);
+        return prop as SdfRelationshipSpec;
+    }
+
+    /// <summary>
+    /// Get an attribute by name.
+    /// </summary>
+    public SdfAttributeSpec? GetAttribute(string name)
+    {
+        var prop = GetPropertyByName(name);
+        return prop as SdfAttributeSpec;
     }
 
     /// <summary>

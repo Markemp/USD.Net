@@ -1,3 +1,4 @@
+using Pxr.Base.Tf;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
@@ -330,10 +331,7 @@ public class UsdPrim : UsdObject
     /// <summary>
     /// Return the name of this prim.
     /// </summary>
-    public override string GetName()
-    {
-        return IsValid() ? GetPath().GetName() : string.Empty;
-    }
+    public override TfToken GetName() => IsValid() ? GetPath().GetName() : string.Empty;
     
     #endregion
     
@@ -459,7 +457,8 @@ public class UsdPrim : UsdObject
             return new UsdAttribute(); // Invalid attribute
 
         var attributePath = GetPath().AppendProperty(name);
-        var attribute = new UsdAttribute(stage, attributePath, typeName);
+        var type = new SdfValueTypeName(typeName);
+        var attribute = new UsdAttribute(stage, attributePath, type);
         attribute.SetCustom(custom);
         
         _attributes[name] = attribute;
@@ -959,6 +958,11 @@ public class UsdPrim : UsdObject
             
         return removed;
     }
-    
+
+    public override string GetDescription()
+    {
+        throw new NotImplementedException();
+    }
+
     #endregion
 }

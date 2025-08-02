@@ -31,43 +31,43 @@ public static class UsdPrimPredicates
     /// <summary>
     /// Default predicate: Valid && Active && !Abstract (simplified for C#)
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Default = prim => 
+    public static readonly Func<IUsdPrim, bool> Default = prim => 
         prim.IsValid() && prim.IsActive() && !prim.IsAbstract();
 
     /// <summary>
     /// Predicate that matches all prims (no filtering).
     /// </summary>
-    public static readonly Func<UsdPrim, bool> All = prim => prim.IsValid();
+    public static readonly Func<IUsdPrim, bool> All = prim => prim.IsValid();
 
     /// <summary>
     /// Predicate for active prims only.
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Active = prim => prim.IsValid() && prim.IsActive();
+    public static readonly Func<IUsdPrim, bool> Active = prim => prim.IsValid() && prim.IsActive();
 
     /// <summary>
     /// Predicate for defined prims only.
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Defined = prim => prim.IsValid() && prim.IsDefined();
+    public static readonly Func<IUsdPrim, bool> Defined = prim => prim.IsValid() && prim.IsDefined();
 
     /// <summary>
     /// Predicate for model prims only.
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Models = prim => prim.IsValid() && prim.IsModel();
+    public static readonly Func<IUsdPrim, bool> Models = prim => prim.IsValid() && prim.IsModel();
 
     /// <summary>
     /// Predicate for group prims only.
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Groups = prim => prim.IsValid() && prim.IsGroup();
+    public static readonly Func<IUsdPrim, bool> Groups = prim => prim.IsValid() && prim.IsGroup();
 
     /// <summary>
     /// Predicate for component prims only.
     /// </summary>
-    public static readonly Func<UsdPrim, bool> Components = prim => prim.IsValid() && prim.IsComponent();
+    public static readonly Func<IUsdPrim, bool> Components = prim => prim.IsValid() && prim.IsComponent();
 
     /// <summary>
     /// Create a predicate that matches prims with specific type names.
     /// </summary>
-    public static Func<UsdPrim, bool> OfType(params string[] typeNames)
+    public static Func<IUsdPrim, bool> OfType(params string[] typeNames)
     {
         var typeSet = new HashSet<string>(typeNames);
         return prim => prim.IsValid() && typeSet.Contains(prim.GetTypeName());
@@ -76,34 +76,26 @@ public static class UsdPrimPredicates
     /// <summary>
     /// Create a predicate that matches prims with names matching a pattern.
     /// </summary>
-    public static Func<UsdPrim, bool> WithName(Func<string, bool> nameFilter)
-    {
-        return prim => prim.IsValid() && nameFilter(prim.GetName());
-    }
+    public static Func<IUsdPrim, bool> WithName(Func<string, bool> nameFilter)
+        => prim => prim.IsValid() && nameFilter(prim.GetName());
 
     /// <summary>
     /// Create an AND combination of predicates.
     /// </summary>
-    public static Func<UsdPrim, bool> And(params Func<UsdPrim, bool>[] predicates)
-    {
-        return prim => predicates.All(p => p(prim));
-    }
+    public static Func<IUsdPrim, bool> And(params Func<IUsdPrim, bool>[] predicates)
+        => prim => predicates.All(p => p(prim));
 
     /// <summary>
     /// Create an OR combination of predicates.
     /// </summary>
-    public static Func<UsdPrim, bool> Or(params Func<UsdPrim, bool>[] predicates)
-    {
-        return prim => predicates.Any(p => p(prim));
-    }
+    public static Func<IUsdPrim, bool> Or(params Func<IUsdPrim, bool>[] predicates)
+        => prim => predicates.Any(p => p(prim));
 
     /// <summary>
     /// Create a NOT predicate.
     /// </summary>
-    public static Func<UsdPrim, bool> Not(Func<UsdPrim, bool> predicate)
-    {
-        return prim => !predicate(prim);
-    }
+    public static Func<IUsdPrim, bool> Not(Func<IUsdPrim, bool> predicate)
+        => prim => !predicate(prim);
 }
 
 /// <summary>
@@ -131,10 +123,10 @@ public enum UsdTraversalMode
 /// Efficient range-based traversal of USD prim subtrees.
 /// Provides depth-first iteration with optional filtering and pruning.
 /// </summary>
-public class UsdPrimRange : IEnumerable<UsdPrim>
+public class UsdPrimRange : IEnumerable<IUsdPrim>
 {
-    private readonly UsdPrim _start;
-    protected readonly Func<UsdPrim, bool> _predicate;
+    private readonly IUsdPrim _start;
+    protected readonly Func<IUsdPrim, bool> _predicate;
     private readonly UsdTraversalMode _mode;
 
     #region Construction
@@ -142,7 +134,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Create a prim range starting from the given prim using the default predicate.
     /// </summary>
-    public UsdPrimRange(UsdPrim start)
+    public UsdPrimRange(IUsdPrim start)
         : this(start, UsdPrimPredicates.Default, UsdTraversalMode.DepthFirst)
     {
     }
@@ -150,7 +142,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Create a prim range with a custom predicate.
     /// </summary>
-    public UsdPrimRange(UsdPrim start, Func<UsdPrim, bool> predicate)
+    public UsdPrimRange(IUsdPrim start, Func<IUsdPrim, bool> predicate)
         : this(start, predicate, UsdTraversalMode.DepthFirst)
     {
     }
@@ -158,7 +150,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Create a prim range with custom predicate and traversal mode.
     /// </summary>
-    public UsdPrimRange(UsdPrim start, Func<UsdPrim, bool> predicate, UsdTraversalMode mode)
+    public UsdPrimRange(IUsdPrim start, Func<IUsdPrim, bool> predicate, UsdTraversalMode mode)
     {
         _start = start ?? throw new ArgumentNullException(nameof(start));
         _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
@@ -172,15 +164,13 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Create a range that visits all prims (no filtering).
     /// </summary>
-    public static UsdPrimRange AllPrims(UsdPrim start)
-    {
-        return new UsdPrimRange(start, UsdPrimPredicates.All);
-    }
+    public static UsdPrimRange AllPrims(IUsdPrim start)
+        => new UsdPrimRange(start, UsdPrimPredicates.All);
 
     /// <summary>
     /// Create a range with pre and post-order visitation.
     /// </summary>
-    public static UsdPrimRange PreAndPostVisit(UsdPrim start)
+    public static UsdPrimRange PreAndPostVisit(IUsdPrim start)
     {
         return new UsdPrimRange(start, UsdPrimPredicates.Default, UsdTraversalMode.PreAndPost);
     }
@@ -189,9 +179,9 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// Create a range for traversing an entire stage.
     /// Uses simple C# LINQ patterns instead of complex iterators.
     /// </summary>
-    public static UsdPrimRange Stage(UsdStage stage, Func<UsdPrim, bool>? predicate = null)
+    public static UsdPrimRange Stage(UsdStage stage, Func<IUsdPrim, bool>? predicate = null)
     {
-        if (stage == null)
+        if (stage is null)
             throw new ArgumentNullException(nameof(stage));
 
         predicate ??= UsdPrimPredicates.Default;
@@ -207,7 +197,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Get an iterator for this prim range using simple C# traversal.
     /// </summary>
-    public virtual IEnumerator<UsdPrim> GetEnumerator()
+    public virtual IEnumerator<IUsdPrim> GetEnumerator()
     {
         return _mode switch
         {
@@ -221,7 +211,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Simple depth-first traversal using C# yield return.
     /// </summary>
-    private static IEnumerable<UsdPrim> TraverseDepthFirst(UsdPrim start, Func<UsdPrim, bool> predicate)
+    private static IEnumerable<IUsdPrim> TraverseDepthFirst(IUsdPrim start, Func<IUsdPrim, bool> predicate)
     {
         if (!start.IsValid())
             yield break;
@@ -244,12 +234,12 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Simple breadth-first traversal using C# Queue.
     /// </summary>
-    private static IEnumerable<UsdPrim> TraverseBreadthFirst(UsdPrim start, Func<UsdPrim, bool> predicate)
+    private static IEnumerable<IUsdPrim> TraverseBreadthFirst(IUsdPrim start, Func<IUsdPrim, bool> predicate)
     {
         if (!start.IsValid())
             yield break;
 
-        var queue = new Queue<UsdPrim>();
+        var queue = new Queue<IUsdPrim>();
         
         // Include start prim if it passes predicate and isn't absolute root
         if (predicate(start) && !start.GetPath().IsAbsoluteRootPath())
@@ -284,7 +274,7 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
     /// <summary>
     /// Pre and post order traversal using C# recursion.
     /// </summary>
-    private static IEnumerable<UsdPrim> TraversePreAndPost(UsdPrim start, Func<UsdPrim, bool> predicate)
+    private static IEnumerable<IUsdPrim> TraversePreAndPost(IUsdPrim start, Func<IUsdPrim, bool> predicate)
     {
         if (!start.IsValid())
             yield break;
@@ -319,17 +309,14 @@ public class UsdPrimRange : IEnumerable<UsdPrim>
 /// </summary>
 public class SimpleUsdPrimRange : UsdPrimRange
 {
-    private readonly IEnumerable<UsdPrim> _prims;
+    private readonly IEnumerable<IUsdPrim> _prims;
 
-    public SimpleUsdPrimRange(IEnumerable<UsdPrim> prims)
-        : base(new UsdPrim(), UsdPrimPredicates.All) // Dummy parameters
+    public SimpleUsdPrimRange(IEnumerable<IUsdPrim> prims)
+        : base((IUsdPrim)new UsdPrim(), UsdPrimPredicates.All) // Dummy parameters
     {
         _prims = prims ?? throw new ArgumentNullException(nameof(prims));
     }
 
-    public override IEnumerator<UsdPrim> GetEnumerator()
-    {
-        return _prims.GetEnumerator();
-    }
+    public override IEnumerator<IUsdPrim> GetEnumerator() => _prims.GetEnumerator();
 }
 

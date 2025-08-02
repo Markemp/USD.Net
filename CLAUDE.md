@@ -229,7 +229,49 @@ if (layer is SdfLayer concreteLayer)
 - **Test Organization** ✅ - Separated unit and integration tests with category-based filtering
 
 ### Next Priority Items
-Based on current completion, the next logical steps are:
+
+#### IMMEDIATE PRIORITY: SdfSpec Layer Integration Plan 🔴
+
+**Problem**: Current SdfSpec classes (SdfRelationshipSpec, SdfPropertySpec, etc.) store data in memory instead of persisting to the SdfLayer. This breaks the fundamental USD architecture where all scene description is stored in layers.
+
+**Root Cause**: We implemented specs as standalone objects with local fields instead of as views into layer data.
+
+**Solution Strategy**: Refactor all SdfSpec classes to use layer field storage:
+
+1. **Phase 1: Field Key Infrastructure**
+   - Create SdfFieldKeys class with all standard field tokens (TargetPaths, Custom, Variability, NoLoadHint, etc.)
+   - Implement layer field access methods in SdfSpec base class
+   - Add path canonicalization utilities
+
+2. **Phase 2: Refactor SdfRelationshipSpec**
+   - Remove `_targetPathList` and `_noLoadHint` fields
+   - Replace with layer field access using GetField/SetField pattern
+   - Update GetTargetPathList() to return a proxy that reads/writes to layer
+   - Implement _CanonicalizeTargetPath for relative path handling
+
+3. **Phase 3: Update Factory Methods**
+   - Modify SdfRelationshipSpec.New() to create spec in layer, not memory
+   - Use proper spec creation through layer's CreateSpec mechanism
+   - Add validation for spec names and paths
+
+4. **Phase 4: Fix Base Classes**
+   - Update SdfPropertySpec to remove local storage (Name, Custom, Variability)
+   - Ensure all property data flows through layer fields
+   - Update SdfPrimSpec property storage to work with new pattern
+
+**Implementation Notes**:
+- All spec data MUST be stored in the layer using field keys
+- Specs should be lightweight views into layer data
+- Follow OpenUSD pattern: specs are created through layer, not constructors
+- Changes to specs immediately affect the layer (no separate "save" step)
+
+**Success Criteria**:
+- Specs persist when layer is saved
+- Changes to specs are immediately reflected in layer
+- Multiple specs can reference same layer data without conflicts
+- Relative paths are properly canonicalized
+
+#### Other Future Items:
 1. **USD File Reading** - Parse .usda files back into stages (UsdaParser)
 2. **Binary Format Support** - Implement .usdc (crate) file format for efficient storage
 3. **Advanced Scene Traversal** - Parallel iteration, filtered traversal, predicate-based search

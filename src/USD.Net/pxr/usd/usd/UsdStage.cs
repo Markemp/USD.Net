@@ -16,8 +16,8 @@ public sealed class UsdStage
     private readonly ISdfLayer? _sessionLayer;
     private readonly List<ISdfLayer> _layerStack = new();
     private readonly ArResolverContext _resolverContext;
-    private readonly Dictionary<ISdfPath, UsdPrim> _primIndex = new();
-    private UsdPrim? _defaultPrim;
+    private readonly Dictionary<ISdfPath, IUsdPrim> _primIndex = new();
+    private IUsdPrim? _defaultPrim;
     private UsdStageLoadRules? _loadRules;
     private UsdStagePopulationMask? _populationMask;
     private UsdTimeCode _startTimeCode = UsdTimeCode.Create(1.0);
@@ -115,10 +115,7 @@ public sealed class UsdStage
     /// <summary>
     /// Get the current edit target for this stage.
     /// </summary>
-    public UsdEditTarget GetEditTarget()
-    {
-        return _editTarget;
-    }
+    public UsdEditTarget GetEditTarget() => _editTarget;
 
     /// <summary>
     /// Set the current edit target for this stage.
@@ -126,16 +123,13 @@ public sealed class UsdStage
     public void SetEditTarget(UsdEditTarget editTarget)
     {
         if (!editTarget.IsValid())
-        {
             throw new ArgumentException("Cannot set an invalid UsdEditTarget as current", nameof(editTarget));
-        }
 
         // Validate that the edit target's layer is in our layer stack
         var targetLayer = editTarget.GetLayer();
-        if (targetLayer != null && !_layerStack.Contains(targetLayer))
-        {
+        
+        if (targetLayer is not null && !_layerStack.Contains(targetLayer))
             throw new ArgumentException("Edit target layer must be in the stage's layer stack", nameof(editTarget));
-        }
 
         _editTarget = editTarget;
     }
@@ -146,9 +140,7 @@ public sealed class UsdStage
     public UsdEditTarget GetEditTargetForLocalLayer(SdfLayer layer)
     {
         if (!_layerStack.Contains(layer))
-        {
             throw new ArgumentException("Layer must be in the stage's layer stack", nameof(layer));
-        }
 
         return UsdEditTarget.ForLocalLayer(layer);
     }
@@ -156,18 +148,13 @@ public sealed class UsdStage
     /// <summary>
     /// Get an edit target for the root layer.
     /// </summary>
-    public UsdEditTarget GetEditTargetForRootLayer()
-    {
-        return UsdEditTarget.ForLocalLayer(_rootLayer);
-    }
+    public UsdEditTarget GetEditTargetForRootLayer() => UsdEditTarget.ForLocalLayer(_rootLayer);
 
     /// <summary>
     /// Get an edit target for the session layer, if one exists.
     /// </summary>
     public UsdEditTarget? GetEditTargetForSessionLayer()
-    {
-        return _sessionLayer != null ? UsdEditTarget.ForSessionLayer(_sessionLayer) : null;
-    }
+        => _sessionLayer != null ? UsdEditTarget.ForSessionLayer(_sessionLayer) : null;
 
     #endregion
 
@@ -176,36 +163,46 @@ public sealed class UsdStage
     /// <summary>
     /// Retrieve a prim at a specific path.
     /// </summary>
-    public UsdPrim GetPrimAtPath(ISdfPath path)
+    public IUsdPrim GetPrimAtPath(ISdfPath path)
     {
-        if (path.IsEmpty())
-            return new UsdPrim(); // Invalid prim
+        if (!path.IsAbsolutePath())
+            return (IUsdPrim)new UsdPrim(); // Invalid prim
 
         if (_primIndex.TryGetValue(path, out var existingPrim))
             return existingPrim;
 
         // Check if a prim spec exists in the root layer
-        var primSpec = _rootLayer.GetPrimSpec(path);
-        if (primSpec != null)
+        var primSpecHandle = _rootLayer.GetPrimAtPath(path);
+        if (primSpecHandle is not null)
         {
-            // Create UsdPrim from prim spec
+            // Create UsdPrim from the path
             var newPrim = new UsdPrim(this, path);
-            if (!string.IsNullOrEmpty(primSpec.GetTypeName()))
-                newPrim.SetTypeName(primSpec.GetTypeName());
             
-            _primIndex[path] = newPrim;
-            return newPrim;
+            // Try to get the type name from the prim spec
+            if (primSpecHandle.IsValid)
+            {
+                var primSpec = primSpecHandle is not null ? (SdfPrimSpec)primSpecHandle! : null;
+                if (primSpec is not null)
+                {
+                    var typeName = primSpec.GetTypeName();
+                    if (!string.IsNullOrEmpty(typeName))
+                        newPrim.SetTypeName(new TfToken(typeName));
+                }
+            }
+            
+            _primIndex[path] = (IUsdPrim)newPrim;
+            return (IUsdPrim)newPrim;
         }
 
         // Return invalid prim if not found
-        return new UsdPrim();
+        return (IUsdPrim)new UsdPrim();
     }
 
     /// <summary>
     /// Get the pseudo-root prim for this stage.
     /// The pseudo-root serves as the parent for all root prims.
     /// </summary>
-    public UsdPrim GetPseudoRoot()
+    public IUsdPrim GetPseudoRoot()
     {
         var pseudoRootPath = SdfPath.AbsoluteRootPath();
         
@@ -215,18 +212,18 @@ public sealed class UsdStage
             
         // Create pseudo-root if it doesn't exist
         var pseudoRoot = new UsdPrim(this, pseudoRootPath);
-        _primIndex[pseudoRootPath] = pseudoRoot;
+        _primIndex[pseudoRootPath] = (IUsdPrim)pseudoRoot;
         
         // Populate stage with prims from root layer
         PopulatePrimsFromLayer();
         
-        return pseudoRoot;
+        return (IUsdPrim)pseudoRoot;
     }
 
     /// <summary>
     /// Define a new prim at the given path.
     /// </summary>
-    public UsdPrim DefinePrim(ISdfPath path, TfToken? typeName = null)
+    public IUsdPrim DefinePrim(ISdfPath path, TfToken? typeName = null)
     {
         if (path.IsEmpty() || !path.IsAbsolutePath())
             throw new ArgumentException("Path must be absolute and non-empty", nameof(path));
@@ -251,20 +248,20 @@ public sealed class UsdStage
         if (typeName.HasValue && !typeName.Value.IsEmpty)
             newPrim.SetTypeName(typeName.Value.GetText());
 
-        _primIndex[path] = newPrim;
-        return newPrim;
+        _primIndex[path] = (IUsdPrim)newPrim;
+        return (IUsdPrim)newPrim;
     }
 
     /// <summary>
     /// Define a new prim at the given path (string overload).
     /// </summary>
-    public UsdPrim DefinePrim(string path, TfToken? typeName = null)
-        => DefinePrim(new SdfPath(path), typeName);
+    public IUsdPrim DefinePrim(string path, TfToken? typeName = null)
+        => DefinePrim((ISdfPath)new SdfPath(path), typeName);
 
     /// <summary>
     /// Ensure a prim exists at the given path, creating it if necessary.
     /// </summary>
-    public UsdPrim OverridePrim(ISdfPath path) => DefinePrim(path);
+    public IUsdPrim OverridePrim(ISdfPath path) => DefinePrim(path);
 
     /// <summary>
     /// Remove a prim at the given path.
@@ -293,12 +290,12 @@ public sealed class UsdStage
     /// <summary>
     /// Get the default prim for this stage.
     /// </summary>
-    public UsdPrim? GetDefaultPrim() => _defaultPrim;
+    public IUsdPrim? GetDefaultPrim() => _defaultPrim;
 
     /// <summary>
     /// Set the default prim for this stage.
     /// </summary>
-    public bool SetDefaultPrim(UsdPrim prim)
+    public bool SetDefaultPrim(IUsdPrim prim)
     {
         _defaultPrim = prim;
         return true;
@@ -325,13 +322,13 @@ public sealed class UsdStage
     /// <summary>
     /// Iterate through all prims on this stage.
     /// </summary>
-    public IEnumerable<UsdPrim> Traverse()
+    public IEnumerable<IUsdPrim> Traverse()
         => _primIndex.Values.Where(prim => prim.IsValid());
 
     /// <summary>
     /// Iterate through prims with a custom predicate.
     /// </summary>
-    public IEnumerable<UsdPrim> TraverseAll()
+    public IEnumerable<IUsdPrim> TraverseAll()
         => _primIndex.Values;
     
     /// <summary>
@@ -343,7 +340,7 @@ public sealed class UsdStage
     /// <summary>
     /// Traverse the entire stage with custom predicate (C# simplified).
     /// </summary>
-    public UsdPrimRange TraverseRange(Func<UsdPrim, bool> predicate)
+    public UsdPrimRange TraverseRange(Func<IUsdPrim, bool> predicate)
         =>new SimpleUsdPrimRange(TraverseAll().Where(predicate ?? UsdPrimPredicates.Default));
     
     /// <summary>

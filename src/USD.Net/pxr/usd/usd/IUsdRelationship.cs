@@ -17,7 +17,7 @@ namespace Pxr.Usd;
 /// another UsdRelationship or UsdAttribute on the same UsdPrim, or on a completely different 
 /// UsdPrim, such as /ModelRoot/Lights/KeyLight.
 /// </remarks>
-public interface IUsdRelationship
+public interface IUsdRelationship : IUsdProperty
 {
     #region Editing Relationships at Current EditTarget
 

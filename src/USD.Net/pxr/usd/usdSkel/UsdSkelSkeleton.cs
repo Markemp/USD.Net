@@ -217,13 +217,14 @@ public class UsdSkelSkeleton : UsdGeomBoundable
         if (rel.IsValid())
         {
             var targets = rel.GetTargets();
-            if (targets.Length > 0)
+            if (targets.Count > 0)
             {
                 var stage = Prim.GetStage();
                 if (stage != null)
                 {
                     var animPrim = stage.GetPrimAtPath(targets[0]);
-                    if (animPrim.IsA<UsdSkelAnimation>())
+                    TfType animPrimType = animPrim.GetTypeName();
+                    if (animPrim.IsA(typeof(UsdSkelAnimation)))
                         return new UsdSkelAnimation(animPrim);
                 }
             }

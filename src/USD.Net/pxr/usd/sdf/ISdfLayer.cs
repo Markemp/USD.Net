@@ -293,6 +293,44 @@ public interface ISdfLayer
     IReadOnlyList<TfToken> ListFields(ISdfPath path);
 
     /// <summary>
+    /// Returns the object at the given path.
+    /// </summary>
+    /// <param name="path">The path to the object.</param>
+    /// <returns>The spec at path, or null if there is no spec at path.</returns>
+    SdfSpec? GetObjectAtPath(ISdfPath path);
+
+    /// <summary>
+    /// Returns the prim at the given path.
+    /// </summary>
+    /// <param name="path">The path to the prim.</param>
+    /// <returns>The prim spec at path, or null if there is no prim at path.</returns>
+    /// <remarks>
+    /// This is simply a more specifically typed version of GetObjectAtPath().
+    /// </remarks>
+    SdfPrimSpecHandle? GetPrimAtPath(ISdfPath path);
+
+    /// <summary>
+    /// Returns a property at the given path.
+    /// </summary>
+    /// <param name="path">The path to the property.</param>
+    /// <returns>The property spec at path, or null if there is no property at path.</returns>
+    /// <remarks>
+    /// This is simply a more specifically typed version of GetObjectAtPath().
+    /// </remarks>
+    SdfPropertySpec? GetPropertyAtPath(ISdfPath path);
+
+    // TODO: Uncomment when SdfAttributeSpec is implemented
+    // /// <summary>
+    // /// Returns an attribute at the given path.
+    // /// </summary>
+    // /// <param name="path">The path to the attribute.</param>
+    // /// <returns>The attribute spec at path, or null if there is no attribute at path.</returns>
+    // /// <remarks>
+    // /// This is simply a more specifically typed version of GetObjectAtPath().
+    // /// </remarks>
+    // SdfAttributeSpec? GetAttributeAtPath(ISdfPath path);
+
+    /// <summary>
     /// Return whether a value exists for the given path and fieldName.
     /// </summary>
     /// <param name="path">The path to the spec.</param>

@@ -1,108 +1,71 @@
+using Pxr.Base.Tf;
 using Pxr.Base.Vt;
 using Pxr.Usd.Sdf;
 
 namespace Pxr.Usd;
 
-/// <summary>
-/// UsdAttribute is a scenegraph object for authoring and retrieving numeric, string, and array valued data,
-/// sampled over time, or animated by a spline.
-/// </summary>
-public class UsdAttribute : UsdProperty
+public class UsdAttribute : UsdProperty, IUsdAttribute
 {
     private readonly Dictionary<UsdTimeCode, VtValue> _timeSamples = new();
     private readonly List<ISdfPath> _connections = new();
     private VtValue? _defaultValue;
-    private string _typeName = string.Empty;
-    private UsdVariability _variability = UsdVariability.Varying;
-    private string _colorSpace = string.Empty;
+    private SdfValueTypeName _typeName = SdfValueTypeName.Invalid;
+    private SdfVariability _variability = SdfVariability.Varying;
+    private TfToken _colorSpace = TfToken.Empty;
     private bool _isBlocked;
 
     #region Construction
 
-    /// <summary>
-    /// Create an invalid attribute.
-    /// </summary>
     public UsdAttribute() : base()
     {
     }
 
-    /// <summary>
-    /// Create an attribute with stage and path.
-    /// </summary>
     public UsdAttribute(UsdStage stage, ISdfPath path) : base(stage, path)
     {
     }
 
-    /// <summary>
-    /// Create an attribute with stage, path, and type.
-    /// </summary>
-    public UsdAttribute(UsdStage stage, ISdfPath path, string typeName) : base(stage, path)
+    public UsdAttribute(UsdStage stage, ISdfPath path, SdfValueTypeName typeName) : base(stage, path)
     {
-        _typeName = typeName ?? string.Empty;
+        _typeName = typeName;
     }
 
     #endregion
 
     #region Type Information
 
-    /// <summary>
-    /// Get the type name of this attribute.
-    /// </summary>
-    public virtual string GetTypeName() => _typeName;
+    public virtual SdfValueTypeName GetTypeName() => _typeName;
 
-    /// <summary>
-    /// Set the type name of this attribute.
-    /// </summary>
-    public virtual bool SetTypeName(string typeName)
+    public virtual bool SetTypeName(SdfValueTypeName typeName)
     {
-        _typeName = typeName ?? string.Empty;
+        _typeName = typeName;
         return true;
     }
 
-    /// <summary>
-    /// Return true if this attribute has a type name.
-    /// </summary>
-    public virtual bool HasTypeName() => !string.IsNullOrEmpty(_typeName);
 
     #endregion
 
     #region Variability
 
-    /// <summary>
-    /// Get the variability of this attribute.
-    /// </summary>
-    public virtual UsdVariability GetVariability() => _variability;
+    public virtual SdfVariability GetVariability() => _variability;
 
-    /// <summary>
-    /// Set the variability of this attribute.
-    /// </summary>
-    public virtual bool SetVariability(UsdVariability variability)
+    public virtual bool SetVariability(SdfVariability variability)
     {
         _variability = variability;
         return true;
     }
 
-    /// <summary>
-    /// Return true if this attribute varies over time.
-    /// </summary>
     public virtual bool ValueMightBeTimeVarying()
-        => _variability == UsdVariability.Varying && _timeSamples.Count > 1;
+        => _variability == SdfVariability.Varying && _timeSamples.Count > 1;
 
     #endregion
 
     #region Value Operations
 
-    /// <summary>
-    /// Get the value of this attribute at the default time.
-    /// </summary>
     public virtual bool Get<T>(out T value)
     {
         return Get(out value, UsdTimeCode.Default());
     }
 
-    /// <summary>
-    /// Get the value of this attribute at the given time.
-    /// </summary>
     public virtual bool Get<T>(out T value, UsdTimeCode time)
     {
         value = default!;
@@ -111,7 +74,7 @@ public class UsdAttribute : UsdProperty
             return false;
 
         // For uniform attributes or default time, return default value
-        if (_variability == UsdVariability.Uniform || time.IsDefault())
+        if (_variability == SdfVariability.Uniform || time.IsDefault())
         {
             if (_defaultValue != null)
             {
@@ -145,17 +108,11 @@ public class UsdAttribute : UsdProperty
         return false;
     }
 
-    /// <summary>
-    /// Get the value of this attribute as VtValue at the default time.
-    /// </summary>
     public virtual bool Get(out VtValue value)
     {
         return Get(out value, UsdTimeCode.Default());
     }
 
-    /// <summary>
-    /// Get the value of this attribute as VtValue at the given time.
-    /// </summary>
     public virtual bool Get(out VtValue value, UsdTimeCode time)
     {
         value = VtValue.CreateEmpty();
@@ -164,7 +121,7 @@ public class UsdAttribute : UsdProperty
             return false;
 
         // For uniform attributes or default time, return default value
-        if (_variability == UsdVariability.Uniform || time.IsDefault())
+        if (_variability == SdfVariability.Uniform || time.IsDefault())
         {
             if (_defaultValue != null)
             {
@@ -185,9 +142,6 @@ public class UsdAttribute : UsdProperty
         return GetInterpolatedValue(time, out value);
     }
 
-    /// <summary>
-    /// Get interpolated value between time samples.
-    /// </summary>
     private bool GetInterpolatedValue(UsdTimeCode time, out VtValue value)
     {
         value = VtValue.CreateEmpty();
@@ -243,33 +197,21 @@ public class UsdAttribute : UsdProperty
         return UsdInterpolation.Interpolate(lowerValue, upperValue, alpha, interpolationType, out value);
     }
 
-    /// <summary>
-    /// Set the value of this attribute at the default time.
-    /// </summary>
     public virtual bool Set<T>(T value)
     {
         return Set(new VtValue(value), UsdTimeCode.Default());
     }
 
-    /// <summary>
-    /// Set the value of this attribute at the given time.
-    /// </summary>
     public virtual bool Set<T>(T value, UsdTimeCode time)
     {
         return Set(new VtValue(value), time);
     }
 
-    /// <summary>
-    /// Set the value of this attribute as VtValue at the default time.
-    /// </summary>
     public virtual bool Set(VtValue value)
     {
         return Set(value, UsdTimeCode.Default());
     }
 
-    /// <summary>
-    /// Set the value of this attribute as VtValue at the given time.
-    /// </summary>
     public virtual bool Set(VtValue value, UsdTimeCode time)
     {
         if (time.IsDefault())
@@ -295,43 +237,51 @@ public class UsdAttribute : UsdProperty
         return !_isBlocked && (_defaultValue != null || _timeSamples.Count > 0);
     }
 
-    /// <summary>
-    /// Return true if this attribute has authored time samples.
-    /// </summary>
-    public virtual bool HasAuthoredTimeSamples()
+    public virtual bool HasAuthoredValue()
     {
-        return _timeSamples.Count > 0;
+        return !_isBlocked && (_defaultValue != null || _timeSamples.Count > 0);
     }
 
-    /// <summary>
-    /// Return true if this attribute has a fallback value.
-    /// </summary>
     public virtual bool HasFallbackValue()
     {
         // TODO: Check schema definition for fallback value
         return false;
     }
 
+    public virtual TfToken GetRoleName()
+    {
+        // TODO: Extract role from type name
+        return TfToken.Empty;
+    }
+
+    public virtual bool SetConnections(IEnumerable<ISdfPath> sources)
+    {
+        if (!IsValid())
+            return false;
+            
+        _connections.Clear();
+        if (sources != null)
+        {
+            _connections.AddRange(sources.Where(s => !s.IsEmpty()));
+        }
+        return true;
+    }
+
     #endregion
 
     #region Time Samples
 
-    /// <summary>
-    /// Get all authored time sample times for this attribute.
-    /// </summary>
-    public virtual double[] GetTimeSamples()
+    public virtual bool GetTimeSamples(out IReadOnlyList<double> times)
     {
-        
-        return _timeSamples.Keys
+        var sampleTimes = _timeSamples.Keys
             .Where(t => !t.IsDefault())
             .Select(t => t.GetValue())
             .OrderBy(t => t)
-            .ToArray();
+            .ToList();
+        times = sampleTimes.AsReadOnly();
+        return true;
     }
 
-    /// <summary>
-    /// Get time samples within a given interval.
-    /// </summary>
     public virtual double[] GetTimeSamplesInInterval(UsdTimeCode startTime, UsdTimeCode endTime)
     {
         var start = startTime.GetValue();
@@ -348,10 +298,7 @@ public class UsdAttribute : UsdProperty
     /// <summary>
     /// Get the number of time samples authored for this attribute.
     /// </summary>
-    public virtual int GetNumTimeSamples()
-    {
-        return _timeSamples.Count;
-    }
+    public virtual int GetNumTimeSamples() => _timeSamples.Count;
 
     /// <summary>
     /// Get the bracketing time samples around the given time.
@@ -362,21 +309,23 @@ public class UsdAttribute : UsdProperty
         upper = double.NaN;
         hasTimeSamples = false;
 
-        var samples = GetTimeSamples();
-        if (samples.Length == 0)
+        // Use the out parameter version of GetTimeSamples
+        if (!GetTimeSamples(out IReadOnlyList<double> samples))
+            return false;
+
+        if (samples.Count == 0)
             return false;
 
         hasTimeSamples = true;
 
         // Find bracketing samples
-        var lowerSamples = samples.Where(t => t <= time).ToArray();
-        var upperSamples = samples.Where(t => t >= time).ToArray();
+        var lowerSamples = samples.Where(t => t <= time).ToList();
+        var upperSamples = samples.Where(t => t >= time).ToList();
 
-
-        if (lowerSamples.Length > 0)
+        if (lowerSamples.Count > 0)
             lower = lowerSamples.Max();
 
-        if (upperSamples.Length > 0)
+        if (upperSamples.Count > 0)
             upper = upperSamples.Min();
 
         return true;
@@ -386,26 +335,13 @@ public class UsdAttribute : UsdProperty
 
     #region Blocking and Clearing
 
-    /// <summary>
-    /// Block this attribute.
-    /// </summary>
-    public virtual bool Block()
+    public virtual void Block()
     {
         _isBlocked = true;
-        return true;
     }
 
-    /// <summary>
-    /// Return true if this attribute is blocked.
-    /// </summary>
-    public virtual bool IsBlocked()
-    {
-        return _isBlocked;
-    }
+    public virtual bool IsBlocked() => _isBlocked;
 
-    /// <summary>
-    /// Clear all authored values for this attribute.
-    /// </summary>
     public virtual bool Clear()
     {
         _defaultValue = null;
@@ -414,28 +350,19 @@ public class UsdAttribute : UsdProperty
         return true;
     }
 
-    /// <summary>
-    /// Clear the default value for this attribute.
-    /// </summary>
     public virtual bool ClearDefault()
     {
         _defaultValue = null;
         return true;
     }
 
-    /// <summary>
-    /// Clear all time samples for this attribute.
-    /// </summary>
     public virtual bool ClearAtTime(UsdTimeCode time)
     {
         if (time.IsDefault())
-        {
             _defaultValue = null;
-        }
         else
-        {
             _timeSamples.Remove(time);
-        }
+        
         return true;
     }
 
@@ -443,37 +370,18 @@ public class UsdAttribute : UsdProperty
 
     #region Color Space
 
-    /// <summary>
-    /// Get the color space for this attribute.
-    /// </summary>
-    public virtual string GetColorSpace()
+    public virtual TfToken GetColorSpace() => _colorSpace;
+
+    public virtual void SetColorSpace(TfToken colorSpace)
     {
-        return _colorSpace;
+        _colorSpace = colorSpace;
     }
 
-    /// <summary>
-    /// Set the color space for this attribute.
-    /// </summary>
-    public virtual bool SetColorSpace(string colorSpace)
-    {
-        _colorSpace = colorSpace ?? string.Empty;
-        return true;
-    }
-
-    /// <summary>
-    /// Return true if this attribute has a color space.
-    /// </summary>
-    public virtual bool HasColorSpace()
-    {
-        return !string.IsNullOrEmpty(_colorSpace);
-    }
-
-    /// <summary>
-    /// Clear the color space for this attribute.
-    /// </summary>
+    public virtual bool HasColorSpace() => !_colorSpace.IsEmpty;
+    
     public virtual bool ClearColorSpace()
     {
-        _colorSpace = string.Empty;
+        _colorSpace = TfToken.Empty;
         return true;
     }
 
@@ -481,55 +389,44 @@ public class UsdAttribute : UsdProperty
 
     #region Connections
 
-    /// <summary>
-    /// Add a connection to this attribute.
-    /// </summary>
-    public virtual bool AddConnection(ISdfPath sourcePath, UsdListPosition position = UsdListPosition.BackOfPrependList)
+    public virtual bool AddConnection(ISdfPath source, UsdListPosition position = UsdListPosition.BackOfPrependList)
     {
-        if (!IsValid() || sourcePath.IsEmpty())
+        if (!IsValid() || source.IsEmpty())
             return false;
             
         // Add connection if not already present
-        if (!_connections.Contains(sourcePath))
+        if (!_connections.Contains(source))
         {
             switch (position)
             {
                 case UsdListPosition.FrontOfPrependList:
                 case UsdListPosition.FrontOfAppendList:
-                    _connections.Insert(0, sourcePath);
+                    _connections.Insert(0, source);
                     break;
                 default:
-                    _connections.Add(sourcePath);
+                    _connections.Add(source);
                     break;
             }
         }
         return true;
     }
 
-    /// <summary>
-    /// Remove a connection from this attribute.
-    /// </summary>
-    public virtual bool RemoveConnection(SdfPath sourcePath)
+    public virtual bool RemoveConnection(ISdfPath source)
     {
         if (!IsValid())
             return false;
             
-        return _connections.Remove(sourcePath);
+        return _connections.Remove(source);
     }
 
-    /// <summary>
-    /// Get all connections for this attribute.
-    /// </summary>
-    public virtual ISdfPath[] GetConnections() => _connections.ToArray();
+    public virtual bool GetConnections(out IReadOnlyList<ISdfPath> sources)
+    {
+        sources = _connections.AsReadOnly();
+        return true;
+    }
 
-    /// <summary>
-    /// Return true if this attribute has connections.
-    /// </summary>
-    public virtual bool HasConnections() => _connections.Count > 0;
+    public virtual bool HasAuthoredConnections() => _connections.Count > 0;
 
-    /// <summary>
-    /// Clear all connections for this attribute.
-    /// </summary>
     public virtual bool ClearConnections()
     {
         if (!IsValid())
@@ -539,22 +436,11 @@ public class UsdAttribute : UsdProperty
         return true;
     }
 
-    #endregion
-}
+    public override string GetDescription()
+    {
+        throw new NotImplementedException();
+    }
 
-/// <summary>
-/// Enumeration for attribute variability.
-/// </summary>
-public enum UsdVariability
-{
-    /// <summary>
-    /// Attribute varies over time.
-    /// </summary>
-    Varying,
-    
-    /// <summary>
-    /// Attribute is uniform (constant over time).
-    /// </summary>
-    Uniform
+    #endregion
 }
 

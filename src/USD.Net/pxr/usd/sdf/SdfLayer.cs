@@ -685,6 +685,56 @@ public class SdfLayer : ISdfLayer
         return new SdfLayer(identifier, SdfSchema.Instance, fileFormat);
     }
 
+    #region Spec Access (GetObjectAtPath, GetPrimAtPath, etc.)
+
+    /// <summary>
+    /// Returns the object at the given path.
+    /// </summary>
+    public SdfSpec? GetObjectAtPath(ISdfPath path)
+    {
+        var specType = GetSpecType(path);
+        return specType switch
+        {
+            SdfSpecType.Prim => GetPrimSpec(path) as SdfSpec,
+            // TODO: Implement property, attribute, and relationship spec storage
+            SdfSpecType.Attribute => null,
+            SdfSpecType.Relationship => null,
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Returns the prim at the given path.
+    /// </summary>
+    public SdfPrimSpecHandle? GetPrimAtPath(ISdfPath path)
+    {
+        var primSpec = GetPrimSpec(path);
+        return primSpec != null ? new SdfPrimSpecHandle(primSpec) : null;
+    }
+
+    /// <summary>
+    /// Returns a property at the given path.
+    /// </summary>
+    public SdfPropertySpec? GetPropertyAtPath(ISdfPath path)
+    {
+        // TODO: Implement property spec storage
+        // Properties are typically stored within prim specs
+        return null;
+    }
+
+    // TODO: Uncomment when SdfAttributeSpec is implemented
+    // /// <summary>
+    // /// Returns an attribute at the given path.
+    // /// </summary>
+    // public SdfAttributeSpec? GetAttributeAtPath(ISdfPath path)
+    // {
+    //     // TODO: Implement attribute spec storage
+    //     // Attributes are typically stored within prim specs
+    //     return null;
+    // }
+
+    #endregion
+
     #region Prim Spec Management
 
     /// <summary>

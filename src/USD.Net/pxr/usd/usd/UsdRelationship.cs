@@ -332,4 +332,30 @@ public class UsdRelationship : UsdProperty, IUsdRelationship
         => base.IsDefined() && HasValidTargets();
 
     #endregion
+
+    #region IUsdObject Implementation
+
+    /// <summary>
+    /// Return a string that provides a brief summary description of the object.
+    /// </summary>
+    public override string GetDescription()
+    {
+        var path = GetPath();
+        var stage = GetStage();
+        
+        if (!IsValid())
+            return $"Invalid UsdRelationship at path {path}";
+            
+        var targetCount = GetNumTargets();
+        var targetInfo = targetCount switch
+        {
+            0 => "no targets",
+            1 => "1 target",
+            _ => $"{targetCount} targets"
+        };
+        
+        return $"UsdRelationship '{path.GetName()}' on {stage?.GetRootLayer()?.GetDisplayName() ?? "unknown stage"} with {targetInfo}";
+    }
+
+    #endregion
 }

@@ -8,28 +8,33 @@ using Pxr.Base.Tf;
 /// </summary>
 public static class SdfFieldKeys
 {
-    // Core fields
+    // Core fields - complete list from OpenUSD schema.h
     public static readonly TfToken Active = new("active");
+    public static readonly TfToken AllowedTokens = new("allowedTokens");
     public static readonly TfToken AssetInfo = new("assetInfo");
     public static readonly TfToken ColorConfiguration = new("colorConfiguration");
     public static readonly TfToken ColorManagementSystem = new("colorManagementSystem");
+    public static readonly TfToken ColorSpace = new("colorSpace");
     public static readonly TfToken Comment = new("comment");
     public static readonly TfToken ConnectionPaths = new("connectionPaths");
     public static readonly TfToken Custom = new("custom");
     public static readonly TfToken CustomData = new("customData");
+    public static readonly TfToken CustomLayerData = new("customLayerData");
     public static readonly TfToken Default = new("default");
     public static readonly TfToken DefaultPrim = new("defaultPrim");
     public static readonly TfToken DisplayGroup = new("displayGroup");
+    public static readonly TfToken DisplayGroupOrder = new("displayGroupOrder");
     public static readonly TfToken DisplayName = new("displayName");
     public static readonly TfToken DisplayUnit = new("displayUnit");
     public static readonly TfToken Documentation = new("documentation");
-    public static readonly TfToken EndFrame = new("endFrame");
     public static readonly TfToken EndTimeCode = new("endTimeCode");
+    public static readonly TfToken ExpressionVariables = new("expressionVariables");
     public static readonly TfToken FramePrecision = new("framePrecision");
     public static readonly TfToken FramesPerSecond = new("framesPerSecond");
     public static readonly TfToken Hidden = new("hidden");
-    public static readonly TfToken Inherits = new("inherits");
-    public static readonly TfToken InstanceName = new("instanceName");
+    public static readonly TfToken HasOwnedSubLayers = new("hasOwnedSubLayers");
+    public static readonly TfToken InheritPaths = new("inheritPaths");
+    public static readonly TfToken Instanceable = new("instanceable");
     public static readonly TfToken Kind = new("kind");
     public static readonly TfToken LayerRelocates = new("layerRelocates");
     public static readonly TfToken PrimOrder = new("primOrder");
@@ -45,7 +50,7 @@ public static class SdfFieldKeys
     public static readonly TfToken SessionOwner = new("sessionOwner");
     public static readonly TfToken Specializes = new("specializes");
     public static readonly TfToken Specifier = new("specifier");
-    public static readonly TfToken StartFrame = new("startFrame");
+    public static readonly TfToken Spline = new("spline");
     public static readonly TfToken StartTimeCode = new("startTimeCode");
     public static readonly TfToken SubLayers = new("subLayers");
     public static readonly TfToken SubLayerOffsets = new("subLayerOffsets");
@@ -61,6 +66,17 @@ public static class SdfFieldKeys
     public static readonly TfToken TypeName = new("typeName");
     public static readonly TfToken VariantSelection = new("variantSelection");
     public static readonly TfToken Variability = new("variability");
+    public static readonly TfToken VariantSetNames = new("variantSetNames");
+
+    // Deprecated/legacy fields (kept for compatibility)
+    [Obsolete("Use EndTimeCode instead")]
+    public static readonly TfToken EndFrame = new("endFrame");
+    [Obsolete("Use StartTimeCode instead")] 
+    public static readonly TfToken StartFrame = new("startFrame");
+    [Obsolete("Use InheritPaths instead")]
+    public static readonly TfToken Inherits = new("inherits");
+    [Obsolete("Use Instanceable instead")]
+    public static readonly TfToken InstanceName = new("instanceName");
 }
 
 /// <summary>
